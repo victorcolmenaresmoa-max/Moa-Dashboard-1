@@ -3,7 +3,7 @@
 //  Replace SHEETDB_URL with your actual endpoint
 // ==============================================
 
-const SHEETDB_URL = "https://sheetdb.io/api/v1/YOUR_SHEETDB_ID_HERE";
+const SHEETDB_URL = "https://sheetdb.io/api/v1/gi13znm24cygc";
 
 // ─── Seed data shown while SheetDB URL is not configured ───────────────────
 const SEED_DATA = [

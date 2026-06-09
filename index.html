@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Specialists Dashboard</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- APP WRAPPER -->
+  <div class="app">
+
+    <!-- HEADER -->
+    <header class="page-header">
+      <div class="page-header__icon">👁️</div>
+      <h1 class="page-header__title">Specialists Dashboard</h1>
+    </header>
+
+    <!-- TABS + TOOLBAR ROW -->
+    <div class="tabs-toolbar-row">
+      <!-- TABS -->
+      <nav class="tabs" role="tablist">
+        <button class="tab tab--active" data-tab="all-tasks" role="tab">
+          <span class="tab__icon">⊞</span> All Tasks
+        </button>
+        <button class="tab" data-tab="sprint" role="tab">
+          <span class="tab__icon">⚡</span> Current Sprint
+        </button>
+        <button class="tab" data-tab="calendar" role="tab">
+          <span class="tab__icon">📅</span> Calendar
+        </button>
+        <button class="tab" data-tab="timeline" role="tab">
+          <span class="tab__icon">📊</span> Timeline
+        </button>
+        <button class="tab" data-tab="submit" role="tab">
+          <span class="tab__icon">📝</span> Submit a task
+        </button>
+        <button class="tab" data-tab="weekly" role="tab">
+          <span class="tab__icon">🗓️</span> Weekly Calendar
+        </button>
+        <button class="tab" data-tab="my-tasks" role="tab">
+          <span class="tab__icon">✅</span> My Tasks
+        </button>
+        <button class="tab" data-tab="updates" role="tab">
+          <span class="tab__icon">🕐</span> Recent Updates
+        </button>
+      </nav>
+
+      <!-- TOOLBAR -->
+      <div class="toolbar">
+        <button class="toolbar__btn toolbar__btn--icon" id="btn-filter" title="Filter">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M1 3h14M4 8h8M7 13h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          Filter
+        </button>
+        <button class="toolbar__btn toolbar__btn--icon" id="btn-sort" title="Sort">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 5h12M4 8h8M6 11h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          Sort
+        </button>
+        <button class="toolbar__btn toolbar__btn--icon" id="btn-search" title="Search">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.5"/><path d="M11 11l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
+        <button class="toolbar__btn toolbar__btn--icon" id="btn-auto" title="Automations">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M9 2L5 9h4l-2 5 6-7H9l2-5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+        </button>
+        <button class="toolbar__btn toolbar__btn--new" id="btn-new">
+          New
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 3.5L5 6.5L8 3.5" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- SEARCH BAR (hidden by default) -->
+    <div class="search-bar" id="search-bar" style="display:none;">
+      <input type="text" id="search-input" placeholder="Search tasks..." class="search-input" />
+    </div>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="content-area">
+
+      <!-- ALL TASKS VIEW -->
+      <div class="view view--active" id="view-all-tasks">
+        <div class="table-wrapper">
+          <div id="loading-state" class="loading-state">
+            <div class="spinner"></div>
+            <span>Loading tasks…</span>
+          </div>
+          <div id="error-state" class="error-state" style="display:none;">
+            <span>⚠️ Could not load data. Check your SheetDB URL in <code>app.js</code>.</span>
+          </div>
+          <table class="notion-table" id="main-table" style="display:none;">
+            <thead>
+              <tr id="table-head-row"></tr>
+            </thead>
+            <tbody id="table-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- PLACEHOLDER VIEWS -->
+      <div class="view" id="view-sprint"><div class="placeholder">⚡ Current Sprint view coming soon</div></div>
+      <div class="view" id="view-calendar"><div class="placeholder">📅 Calendar view coming soon</div></div>
+      <div class="view" id="view-timeline"><div class="placeholder">📊 Timeline view coming soon</div></div>
+      <div class="view" id="view-submit">
+        <div class="submit-form-card">
+          <h2>Submit a Task</h2>
+          <form id="submit-form">
+            <div class="form-group">
+              <label>Task Name</label>
+              <input type="text" name="TASKS" placeholder="Enter task name…" required />
+            </div>
+            <div class="form-group">
+              <label>Tipo de trabajo</label>
+              <select name="Tipo de trabajo">
+                <option value="PROJECT">PROJECT</option>
+                <option value="PERPETUAL">PERPETUAL</option>
+                <option value="ON-DEMAND">ON-DEMAND</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Vertical</label>
+              <select name="Vertical">
+                <option value="Academy">Academy</option>
+                <option value="School">School</option>
+                <option value="E-MOA">E-MOA</option>
+                <option value="Afterschool">Afterschool</option>
+                <option value="In-Company">In-Company</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Brief Description</label>
+              <textarea name="Brief Description" placeholder="Describe the task…"></textarea>
+            </div>
+            <div class="form-group">
+              <label>Specialists</label>
+              <input type="text" name="Specialists" placeholder="e.g. Ailil Coutinho, Victor Colmenares" />
+            </div>
+            <div class="form-group">
+              <label>Estado</label>
+              <select name="Estado">
+                <option value="Not started">Not started</option>
+                <option value="In progress">In progress</option>
+                <option value="Stand By">Stand By</option>
+                <option value="Blocked">Blocked</option>
+                <option value="Done">Done</option>
+                <option value="Delayed Done">Delayed Done</option>
+              </select>
+            </div>
+            <button type="submit" class="form-submit-btn">Submit Task</button>
+            <div id="form-feedback" class="form-feedback"></div>
+          </form>
+        </div>
+      </div>
+      <div class="view" id="view-weekly"><div class="placeholder">🗓️ Weekly Calendar view coming soon</div></div>
+      <div class="view" id="view-my-tasks"><div class="placeholder">✅ My Tasks view coming soon</div></div>
+      <div class="view" id="view-updates"><div class="placeholder">🕐 Recent Updates view coming soon</div></div>
+
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

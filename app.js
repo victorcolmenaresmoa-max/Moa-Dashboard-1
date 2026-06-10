@@ -366,12 +366,26 @@ function esc(str) {
 
 // ─── Inline editing ─────────────────────────────────────────────────────────
 function initInlineEditing() {
-  document.getElementById("table-body").addEventListener("click", (e) => {
+  const tbody = document.getElementById("table-body");
+
+  // Use event delegation on pointerdown so the editor opens from the very first click.
+  // This avoids the old “click the column header first, then edit” feeling.
+  tbody.addEventListener("pointerdown", (e) => {
     const td = e.target.closest("td.editable-cell");
     if (!td || e.target.closest(".inline-editor")) return;
+    e.preventDefault();
+    e.stopPropagation();
+
     const row = filteredData[Number(td.dataset.rowIndex)];
     if (!row) return;
     openEditor(td, row, td.dataset.key, td.dataset.type);
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && activeEditor) {
+      activeEditor = null;
+      renderTable(filteredData);
+    }
   });
 }
 
@@ -383,18 +397,63 @@ function openEditor(td, row, key, type) {
   td.classList.add("editing");
   td.innerHTML = getEditorHTML(value, type, key);
 
-  const firstInput = td.querySelector("input, textarea, select");
-  if (firstInput) firstInput.focus();
+  if (["tipo", "estado", "calidad"].includes(type)) {
+    td.querySelectorAll(".quick-option").forEach(button => {
+      button.addEventListener("click", async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const newValue = button.dataset.value || "";
+        activeEditor = null;
+        await patchCell(row, key, newValue);
+      });
+    });
+    const cancel = td.querySelector(".quick-cancel");
+    if (cancel) cancel.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      activeEditor = null;
+      renderTable(filteredData);
+    });
+    return;
+  }
 
-  td.querySelector(".inline-save").addEventListener("click", async () => {
-    const newValue = getEditorValue(td, type);
-    activeEditor = null;
-    await patchCell(row, key, newValue);
-  });
+  const firstInput = td.querySelector("input, textarea");
+  if (firstInput) {
+    firstInput.focus();
+    if (firstInput.select) firstInput.select();
+  }
 
-  td.querySelector(".inline-cancel").addEventListener("click", () => {
-    activeEditor = null;
-    renderTable(filteredData);
+  const saveButton = td.querySelector(".inline-save");
+  const cancelButton = td.querySelector(".inline-cancel");
+
+  if (saveButton) {
+    saveButton.addEventListener("click", async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const newValue = getEditorValue(td, type);
+      activeEditor = null;
+      await patchCell(row, key, newValue);
+    });
+  }
+
+  if (cancelButton) {
+    cancelButton.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      activeEditor = null;
+      renderTable(filteredData);
+    });
+  }
+
+  td.querySelectorAll("input, textarea").forEach(input => {
+    input.addEventListener("keydown", async (e) => {
+      if ((e.key === "Enter" && !e.shiftKey && input.tagName !== "TEXTAREA") || (e.key === "Enter" && (e.ctrlKey || e.metaKey))) {
+        e.preventDefault();
+        const newValue = getEditorValue(td, type);
+        activeEditor = null;
+        await patchCell(row, key, newValue);
+      }
+    });
   });
 }
 
@@ -402,9 +461,19 @@ function getEditorHTML(value, type, key) {
   if (["tipo", "estado", "calidad"].includes(type)) {
     const list = OPTIONS[type] || [];
     return `
-      <div class="inline-editor inline-editor--select">
-        <select class="inline-input">${list.map(opt => `<option value="${esc(opt)}" ${opt === value ? "selected" : ""}>${esc(opt)}</option>`).join("")}</select>
-        ${editorActions()}
+      <div class="inline-editor inline-editor--quick-select" role="listbox">
+        <div class="quick-select-head">
+          <span>Choose an option</span>
+          <button type="button" class="quick-cancel" aria-label="Cancel">×</button>
+        </div>
+        <div class="quick-options">
+          ${list.map(opt => `
+            <button type="button" class="quick-option ${opt === value ? "is-selected" : ""}" data-value="${esc(opt)}" role="option" aria-selected="${opt === value}">
+              <span>${renderOptionPreview(opt, type)}</span>
+              <strong>${esc(opt)}</strong>
+              <em>✓</em>
+            </button>`).join("")}
+        </div>
       </div>`;
   }
 
@@ -417,7 +486,7 @@ function getEditorHTML(value, type, key) {
           ${list.map(opt => `
             <label class="multi-option">
               <input type="checkbox" value="${esc(opt)}" ${current.includes(opt) ? "checked" : ""} />
-              <span>${esc(opt)}</span>
+              <span>${type === "specialists" ? `<span class="mini-avatar">${esc(getInitials(opt))}</span>` : ""}${esc(opt)}</span>
             </label>`).join("")}
         </div>
         ${editorActions()}
@@ -459,6 +528,13 @@ function getEditorHTML(value, type, key) {
     </div>`;
 }
 
+function renderOptionPreview(opt, type) {
+  if (type === "tipo") return renderTipoBadge(opt);
+  if (type === "estado") return renderEstado(opt);
+  if (type === "calidad") return renderCalidad(opt);
+  return esc(opt);
+}
+
 function editorActions() {
   return `
     <div class="inline-actions">
@@ -486,7 +562,7 @@ function getEditorValue(td, type) {
     return startText || endText || "";
   }
 
-  const input = td.querySelector("input, textarea, select");
+  const input = td.querySelector("input, textarea");
   return input ? input.value.trim() : "";
 }
 

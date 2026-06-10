@@ -103,6 +103,89 @@
       <div class="view" id="view-timeline"><div class="placeholder">📊 Timeline view coming soon</div></div>
       <div class="view" id="view-submit">
         <div class="submit-form-card">
+          <h2>Create a Task</h2>
+          <form id="submit-form">
+            
+            <div class="form-group">
+              <label>Task Name</label>
+              <input type="text" name="TASKS" placeholder="Enter task name…" required />
+            </div>
+
+            <div class="form-group row-group">
+              <div class="col">
+                <label>Tipo de trabajo</label>
+                <select name="Tipo de trabajo">
+                  <option value="PROJECT">PROJECT</option>
+                  <option value="PERPETUAL">PERPETUAL</option>
+                  <option value="ON-DEMAND">ON-DEMAND</option>
+                </select>
+              </div>
+              <div class="col">
+                <label>Vertical</label>
+                <select name="Vertical">
+                  <option value="Academy">Academy</option>
+                  <option value="School">School</option>
+                  <option value="E-MOA">E-MOA</option>
+                  <option value="Afterschool">Afterschool</option>
+                  <option value="In-Company">In-Company</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Specialists</label>
+              <div class="checkbox-group">
+                <label><input type="checkbox" name="Specialists_list" value="Ailil Coutinho"> Ailil Coutinho</label>
+                <label><input type="checkbox" name="Specialists_list" value="Asdrubal"> Asdrubal</label>
+                <label><input type="checkbox" name="Specialists_list" value="Melisa"> Melisa</label>
+                <label><input type="checkbox" name="Specialists_list" value="Norilys Castro"> Norilys Castro</label>
+                <label><input type="checkbox" name="Specialists_list" value="Noryley Rodríguez"> Noryley Rodríguez</label>
+                <label><input type="checkbox" name="Specialists_list" value="Roxangel Pérez"> Roxangel Pérez</label>
+                <label><input type="checkbox" name="Specialists_list" value="Victor Colmenares"> Victor Colmenares</label>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Brief Description</label>
+              <textarea name="Brief Description" placeholder="Describe the task…"></textarea>
+            </div>
+
+            <div class="form-group row-group">
+              <div class="col">
+                <label>Deadline 1</label>
+                <input type="date" name="Deadline 1" />
+              </div>
+              <div class="col">
+                <label>Deadline 2</label>
+                <input type="date" name="Deadline 2" />
+              </div>
+              <div class="col">
+                <label>Deadline 3</label>
+                <input type="date" name="Deadline 3" />
+              </div>
+              <div class="col">
+                <label>Deadline 4</label>
+                <input type="date" name="Deadline 4" />
+              </div>
+            </div>
+
+            <div class="form-group row-group">
+              <div class="col">
+                <label>Fechas de Inicio y Fin</label>
+                <input type="text" name="Fecha de Inicio y Fin" placeholder="Ej. May 5 - May 20" />
+              </div>
+              <div class="col">
+                <label>Comments</label>
+                <input type="text" name="Comments" placeholder="Notas adicionales..." />
+              </div>
+            </div>
+
+            <button type="submit" class="form-submit-btn">Submit Task</button>
+            <div id="form-feedback" class="form-feedback"></div>
+          </form>
+        </div>
+      </div>
+        <div class="submit-form-card">
           <h2>Submit a Task</h2>
           <form id="submit-form">
             <div class="form-group">

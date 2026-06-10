@@ -340,3 +340,41 @@ html, body { height: 100%; font-family: var(--font); background: var(--bg-page);
   .toolbar { gap: 2px; }
   .search-input { width: 100%; }
 }
+/* --- Form Layout Enhancements --- */
+.row-group {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.row-group .col {
+  flex: 1;
+  min-width: 140px;
+}
+
+/* --- Checkbox List --- */
+.checkbox-group {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+  margin-top: 4px;
+  padding: 8px 12px;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.checkbox-group label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-primary);
+  cursor: pointer;
+  font-weight: 400 !important; /* overrides form label bolding */
+  margin-bottom: 0 !important;
+}
+.checkbox-group input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  cursor: pointer;
+}

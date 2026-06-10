@@ -10,8 +10,11 @@
 
   <div class="app">
     <header class="page-header">
-      <div class="page-header__icon">👁️</div>
-      <h1 class="page-header__title">Specialists Dashboard</h1>
+      <div class="page-header__icon page-header__icon--logo"><img src="moa-logo.png" alt="MOA" /></div>
+      <div>
+        <h1 class="page-header__title">Specialists Dashboard</h1>
+        <p class="page-header__subtitle">MOA Education task flow</p>
+      </div>
     </header>
 
     <div class="tabs-toolbar-row">
@@ -74,50 +77,81 @@
       <div class="view" id="view-timeline"><div class="placeholder">📊 Timeline view coming soon</div></div>
 
       <div class="view" id="view-submit">
-        <div class="submit-form-card">
-          <h2>Submit a Task</h2>
-          <p class="form-note">Only the essential information is requested here. Estado, Calidad, Rondas, Comments, Deadlines and specialist boxes are edited directly from the dashboard.</p>
+        <section class="submit-hero-shell" aria-label="Submit a new MOA task">
+          <div class="submit-hero-bg" aria-hidden="true"></div>
 
-          <form id="submit-form">
-            <div class="form-group">
-              <label>Task Name</label>
-              <input type="text" name="TASKS" placeholder="Enter task name…" required />
+          <div class="submit-form-card submit-form-card--moa">
+            <div class="submit-brand-header">
+              <div class="submit-logo-wrap">
+                <img src="moa-logo.png" alt="MOA Education" class="submit-logo" />
+              </div>
+              <div>
+                <p class="eyebrow">MOA Education · Specialists Dashboard</p>
+                <h2>Nueva tarea</h2>
+                <p class="form-note">Crea solo la información base. Estado, Calidad, Rondas, Comments, Deadlines y los cuadros de especialistas se completan desde el dashboard.</p>
+              </div>
             </div>
 
-            <div class="form-group">
-              <label>Tipo de trabajo</label>
-              <select name="Tipo de trabajo" required>
-                <option value="PROJECT">PROJECT</option>
-                <option value="PERPETUAL">PERPETUAL</option>
-                <option value="ON-DEMAND">ON-DEMAND</option>
-              </select>
-            </div>
+            <form id="submit-form" class="moa-task-form">
+              <div class="form-group form-group--full">
+                <label>Task Name</label>
+                <input type="text" name="TASKS" placeholder="Ej. English For Teachers (EFT)" required />
+              </div>
 
-            <div class="form-group">
-              <label>Vertical</label>
-              <select name="Vertical" required>
-                <option value="Academy">Academy</option>
-                <option value="School">School</option>
-                <option value="E-MOA">E-MOA</option>
-                <option value="Afterschool">Afterschool</option>
-                <option value="In-Company">In-Company</option>
-              </select>
-            </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Tipo de trabajo</label>
+                  <select name="Tipo de trabajo" required>
+                    <option value="PROJECT">PROJECT</option>
+                    <option value="PERPETUAL">PERPETUAL</option>
+                    <option value="ON-DEMAND">ON-DEMAND</option>
+                  </select>
+                </div>
 
-            <div class="form-group">
-              <label>Specialists</label>
-              <div class="checkbox-grid" id="specialists-create-list"></div>
-            </div>
+                <div class="form-group">
+                  <label>Vertical</label>
+                  <select name="Vertical" required>
+                    <option value="School">School</option>
+                    <option value="Academy">Academy</option>
+                    <option value="E-MOA">E-MOA</option>
+                    <option value="Afterschool">Afterschool</option>
+                    <option value="In-Company">In-Company</option>
+                  </select>
+                </div>
+              </div>
 
-            <div class="form-group">
-              <label>Brief Description</label>
-              <textarea name="Brief Description" placeholder="Describe the task…" required></textarea>
-            </div>
+              <div class="form-group form-group--full">
+                <label>Specialists</label>
+                <div class="people-picker" id="specialists-picker">
+                  <button type="button" class="people-picker__trigger" id="specialists-trigger" aria-haspopup="listbox" aria-expanded="false">
+                    <span class="people-picker__placeholder">Selecciona uno o varios especialistas</span>
+                    <span class="people-picker__chevron">⌄</span>
+                  </button>
 
-            <button type="submit" class="form-submit-btn">Submit Task</button>
-            <div id="form-feedback" class="form-feedback"></div>
-          </form>
-        </div>
+                  <div class="selected-people" id="selected-specialists" aria-live="polite"></div>
+
+                  <div class="people-picker__dropdown" id="specialists-dropdown" hidden>
+                    <div class="people-picker__search-wrap">
+                      <input type="text" id="specialists-search" class="people-picker__search" placeholder="Buscar especialista…" autocomplete="off" />
+                    </div>
+                    <div class="people-picker__list" id="specialists-create-list" role="listbox" aria-multiselectable="true"></div>
+                  </div>
+                </div>
+                <input type="hidden" name="Specialists" id="specialists-hidden" />
+              </div>
+
+              <div class="form-group form-group--full">
+                <label>Brief Description</label>
+                <textarea name="Brief Description" placeholder="Describe la tarea de forma clara y accionable…" required></textarea>
+              </div>
+
+              <div class="submit-actions-row">
+                <button type="submit" class="form-submit-btn">Submit Task</button>
+                <div id="form-feedback" class="form-feedback"></div>
+              </div>
+            </form>
+          </div>
+        </section>
       </div>
 
       <div class="view" id="view-weekly"><div class="placeholder">🗓️ Weekly Calendar view coming soon</div></div>

@@ -866,3 +866,242 @@ html, body {
   color: var(--moa-deep);
   font-weight: 650;
 }
+
+/* =========================================================
+   MOA branded dashboard shell + direct inline editing polish
+========================================================= */
+html, body {
+  min-height: 100%;
+  background:
+    radial-gradient(circle at 4% 6%, rgba(33, 169, 179, 0.24) 0 15rem, transparent 15.2rem),
+    radial-gradient(circle at 96% 2%, rgba(10, 111, 120, 0.16) 0 18rem, transparent 18.2rem),
+    radial-gradient(circle at 78% 88%, rgba(201, 239, 241, 0.42) 0 20rem, transparent 20.2rem),
+    linear-gradient(135deg, #f5fbfb 0%, #eefafa 45%, #ffffff 100%);
+  background-attachment: fixed;
+}
+
+.app {
+  position: relative;
+  isolation: isolate;
+}
+
+.app::before,
+.app::after {
+  content: "";
+  position: fixed;
+  z-index: -1;
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+.app::before {
+  width: 460px;
+  height: 460px;
+  left: -180px;
+  bottom: -190px;
+  background: linear-gradient(145deg, rgba(10, 111, 120, 0.13), rgba(33, 169, 179, 0.04));
+}
+
+.app::after {
+  width: 340px;
+  height: 340px;
+  right: -130px;
+  top: 150px;
+  background: linear-gradient(145deg, rgba(22, 140, 150, 0.11), rgba(10, 111, 120, 0.03));
+}
+
+.page-header,
+.tabs-toolbar-row,
+.search-bar,
+.table-wrapper,
+.placeholder {
+  position: relative;
+}
+
+.tabs-toolbar-row {
+  margin-top: 8px;
+  padding: 10px 12px 0;
+  border: 1px solid rgba(10, 111, 120, 0.10);
+  border-radius: 18px 18px 0 0;
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 16px 40px rgba(7, 90, 98, 0.06);
+}
+
+.content-area {
+  padding: 0 0 40px;
+}
+
+.table-wrapper {
+  min-height: 58vh;
+  padding: 0;
+  border: 1px solid rgba(10, 111, 120, 0.10);
+  border-top: 0;
+  border-radius: 0 0 22px 22px;
+  background: rgba(255, 255, 255, 0.76);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 26px 70px rgba(7, 90, 98, 0.10);
+}
+
+.notion-table thead th,
+.notion-table tbody td,
+.notion-table thead th:first-child,
+.notion-table tbody td:first-child {
+  background: transparent;
+}
+
+.notion-table thead th {
+  background: rgba(255,255,255,0.55);
+  color: var(--moa-ink);
+}
+
+.notion-table tbody tr:hover {
+  background: rgba(230, 247, 248, 0.60);
+}
+
+.notion-table tbody tr:hover td:first-child {
+  background: rgba(230, 247, 248, 0.65);
+}
+
+.editable-cell {
+  position: relative;
+}
+
+.editable-cell:hover {
+  background: rgba(230, 247, 248, 0.48);
+  border-color: rgba(10, 111, 120, 0.14);
+}
+
+.editable-cell.editing {
+  background: rgba(255,255,255,0.98);
+  border-color: rgba(10, 111, 120, 0.34);
+  box-shadow: 0 12px 34px rgba(7, 90, 98, 0.15), inset 0 0 0 1px rgba(10, 111, 120, 0.16);
+  z-index: 25;
+}
+
+.inline-editor--quick-select {
+  min-width: 260px;
+  padding: 10px;
+  border: 1px solid rgba(10, 111, 120, 0.14);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 18px 45px rgba(7, 90, 98, 0.18);
+}
+
+.quick-select-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+  padding: 0 2px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--moa-deep);
+}
+
+.quick-cancel {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  background: var(--moa-soft);
+  color: var(--moa-deep);
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.quick-cancel:hover {
+  background: var(--moa-mint);
+}
+
+.quick-options {
+  display: grid;
+  gap: 7px;
+}
+
+.quick-option {
+  width: 100%;
+  min-height: 42px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: #ffffff;
+  color: var(--text-primary);
+  font-family: var(--font);
+  text-align: left;
+  cursor: pointer;
+  transition: background .12s, border-color .12s, transform .12s;
+}
+
+.quick-option:hover {
+  background: var(--moa-soft);
+  border-color: rgba(10, 111, 120, 0.14);
+  transform: translateY(-1px);
+}
+
+.quick-option.is-selected {
+  background: linear-gradient(135deg, rgba(230, 247, 248, 0.98), rgba(201, 239, 241, 0.78));
+  border-color: rgba(10, 111, 120, 0.24);
+}
+
+.quick-option strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.quick-option em {
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(10, 111, 120, 0.08);
+  color: transparent;
+  font-style: normal;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.quick-option.is-selected em {
+  background: var(--moa-deep);
+  color: #fff;
+}
+
+.inline-editor--multi .multi-options {
+  min-width: 280px;
+  border-color: rgba(10, 111, 120, 0.14);
+  border-radius: 16px;
+  box-shadow: 0 18px 45px rgba(7, 90, 98, 0.14);
+}
+
+.mini-avatar {
+  width: 22px;
+  height: 22px;
+  margin-right: 7px;
+  border-radius: 50%;
+  display: inline-grid;
+  place-items: center;
+  background: linear-gradient(135deg, var(--moa-aqua), var(--moa-deep));
+  color: white;
+  font-size: 9px;
+  font-weight: 800;
+  vertical-align: middle;
+}
+
+.inline-actions .inline-save {
+  box-shadow: 0 8px 18px rgba(10, 111, 120, 0.20);
+}

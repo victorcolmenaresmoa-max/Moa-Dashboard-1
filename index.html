@@ -8,46 +8,24 @@
 </head>
 <body>
 
-  <!-- APP WRAPPER -->
   <div class="app">
-
-    <!-- HEADER -->
     <header class="page-header">
       <div class="page-header__icon">👁️</div>
       <h1 class="page-header__title">Specialists Dashboard</h1>
     </header>
 
-    <!-- TABS + TOOLBAR ROW -->
     <div class="tabs-toolbar-row">
-      <!-- TABS -->
       <nav class="tabs" role="tablist">
-        <button class="tab tab--active" data-tab="all-tasks" role="tab">
-          <span class="tab__icon">⊞</span> All Tasks
-        </button>
-        <button class="tab" data-tab="sprint" role="tab">
-          <span class="tab__icon">⚡</span> Current Sprint
-        </button>
-        <button class="tab" data-tab="calendar" role="tab">
-          <span class="tab__icon">📅</span> Calendar
-        </button>
-        <button class="tab" data-tab="timeline" role="tab">
-          <span class="tab__icon">📊</span> Timeline
-        </button>
-        <button class="tab" data-tab="submit" role="tab">
-          <span class="tab__icon">📝</span> Submit a task
-        </button>
-        <button class="tab" data-tab="weekly" role="tab">
-          <span class="tab__icon">🗓️</span> Weekly Calendar
-        </button>
-        <button class="tab" data-tab="my-tasks" role="tab">
-          <span class="tab__icon">✅</span> My Tasks
-        </button>
-        <button class="tab" data-tab="updates" role="tab">
-          <span class="tab__icon">🕐</span> Recent Updates
-        </button>
+        <button class="tab tab--active" data-tab="all-tasks" role="tab"><span class="tab__icon">⊞</span> All Tasks</button>
+        <button class="tab" data-tab="sprint" role="tab"><span class="tab__icon">⚡</span> Current Sprint</button>
+        <button class="tab" data-tab="calendar" role="tab"><span class="tab__icon">📅</span> Calendar</button>
+        <button class="tab" data-tab="timeline" role="tab"><span class="tab__icon">📊</span> Timeline</button>
+        <button class="tab" data-tab="submit" role="tab"><span class="tab__icon">📝</span> Submit a task</button>
+        <button class="tab" data-tab="weekly" role="tab"><span class="tab__icon">🗓️</span> Weekly Calendar</button>
+        <button class="tab" data-tab="my-tasks" role="tab"><span class="tab__icon">✅</span> My Tasks</button>
+        <button class="tab" data-tab="updates" role="tab"><span class="tab__icon">🕐</span> Recent Updates</button>
       </nav>
 
-      <!-- TOOLBAR -->
       <div class="toolbar">
         <button class="toolbar__btn toolbar__btn--icon" id="btn-filter" title="Filter">
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M1 3h14M4 8h8M7 13h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
@@ -70,15 +48,11 @@
       </div>
     </div>
 
-    <!-- SEARCH BAR (hidden by default) -->
     <div class="search-bar" id="search-bar" style="display:none;">
       <input type="text" id="search-input" placeholder="Search tasks..." class="search-input" />
     </div>
 
-    <!-- MAIN CONTENT AREA -->
     <main class="content-area">
-
-      <!-- ALL TASKS VIEW -->
       <div class="view view--active" id="view-all-tasks">
         <div class="table-wrapper">
           <div id="loading-state" class="loading-state">
@@ -89,120 +63,39 @@
             <span>⚠️ Could not load data. Check your SheetDB URL in <code>app.js</code>.</span>
           </div>
           <table class="notion-table" id="main-table" style="display:none;">
-            <thead>
-              <tr id="table-head-row"></tr>
-            </thead>
+            <thead><tr id="table-head-row"></tr></thead>
             <tbody id="table-body"></tbody>
           </table>
         </div>
       </div>
 
-      <!-- PLACEHOLDER VIEWS -->
       <div class="view" id="view-sprint"><div class="placeholder">⚡ Current Sprint view coming soon</div></div>
       <div class="view" id="view-calendar"><div class="placeholder">📅 Calendar view coming soon</div></div>
       <div class="view" id="view-timeline"><div class="placeholder">📊 Timeline view coming soon</div></div>
+
       <div class="view" id="view-submit">
         <div class="submit-form-card">
-          <h2>Create a Task</h2>
-          <form id="submit-form">
-            
-            <div class="form-group">
-              <label>Task Name</label>
-              <input type="text" name="TASKS" placeholder="Enter task name…" required />
-            </div>
-
-            <div class="form-group row-group">
-              <div class="col">
-                <label>Tipo de trabajo</label>
-                <select name="Tipo de trabajo">
-                  <option value="PROJECT">PROJECT</option>
-                  <option value="PERPETUAL">PERPETUAL</option>
-                  <option value="ON-DEMAND">ON-DEMAND</option>
-                </select>
-              </div>
-              <div class="col">
-                <label>Vertical</label>
-                <select name="Vertical">
-                  <option value="Academy">Academy</option>
-                  <option value="School">School</option>
-                  <option value="E-MOA">E-MOA</option>
-                  <option value="Afterschool">Afterschool</option>
-                  <option value="In-Company">In-Company</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label>Specialists</label>
-              <div class="checkbox-group">
-                <label><input type="checkbox" name="Specialists_list" value="Ailil Coutinho"> Ailil Coutinho</label>
-                <label><input type="checkbox" name="Specialists_list" value="Asdrubal"> Asdrubal</label>
-                <label><input type="checkbox" name="Specialists_list" value="Melisa"> Melisa</label>
-                <label><input type="checkbox" name="Specialists_list" value="Norilys Castro"> Norilys Castro</label>
-                <label><input type="checkbox" name="Specialists_list" value="Noryley Rodríguez"> Noryley Rodríguez</label>
-                <label><input type="checkbox" name="Specialists_list" value="Roxangel Pérez"> Roxangel Pérez</label>
-                <label><input type="checkbox" name="Specialists_list" value="Victor Colmenares"> Victor Colmenares</label>
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label>Brief Description</label>
-              <textarea name="Brief Description" placeholder="Describe the task…"></textarea>
-            </div>
-
-            <div class="form-group row-group">
-              <div class="col">
-                <label>Deadline 1</label>
-                <input type="date" name="Deadline 1" />
-              </div>
-              <div class="col">
-                <label>Deadline 2</label>
-                <input type="date" name="Deadline 2" />
-              </div>
-              <div class="col">
-                <label>Deadline 3</label>
-                <input type="date" name="Deadline 3" />
-              </div>
-              <div class="col">
-                <label>Deadline 4</label>
-                <input type="date" name="Deadline 4" />
-              </div>
-            </div>
-
-            <div class="form-group row-group">
-              <div class="col">
-                <label>Fechas de Inicio y Fin</label>
-                <input type="text" name="Fecha de Inicio y Fin" placeholder="Ej. May 5 - May 20" />
-              </div>
-              <div class="col">
-                <label>Comments</label>
-                <input type="text" name="Comments" placeholder="Notas adicionales..." />
-              </div>
-            </div>
-
-            <button type="submit" class="form-submit-btn">Submit Task</button>
-            <div id="form-feedback" class="form-feedback"></div>
-          </form>
-        </div>
-      </div>
-        <div class="submit-form-card">
           <h2>Submit a Task</h2>
+          <p class="form-note">Only the essential information is requested here. Estado, Calidad, Rondas, Comments, Deadlines and specialist boxes are edited directly from the dashboard.</p>
+
           <form id="submit-form">
             <div class="form-group">
               <label>Task Name</label>
               <input type="text" name="TASKS" placeholder="Enter task name…" required />
             </div>
+
             <div class="form-group">
               <label>Tipo de trabajo</label>
-              <select name="Tipo de trabajo">
+              <select name="Tipo de trabajo" required>
                 <option value="PROJECT">PROJECT</option>
                 <option value="PERPETUAL">PERPETUAL</option>
                 <option value="ON-DEMAND">ON-DEMAND</option>
               </select>
             </div>
+
             <div class="form-group">
               <label>Vertical</label>
-              <select name="Vertical">
+              <select name="Vertical" required>
                 <option value="Academy">Academy</option>
                 <option value="School">School</option>
                 <option value="E-MOA">E-MOA</option>
@@ -210,34 +103,26 @@
                 <option value="In-Company">In-Company</option>
               </select>
             </div>
-            <div class="form-group">
-              <label>Brief Description</label>
-              <textarea name="Brief Description" placeholder="Describe the task…"></textarea>
-            </div>
+
             <div class="form-group">
               <label>Specialists</label>
-              <input type="text" name="Specialists" placeholder="e.g. Ailil Coutinho, Victor Colmenares" />
+              <div class="checkbox-grid" id="specialists-create-list"></div>
             </div>
+
             <div class="form-group">
-              <label>Estado</label>
-              <select name="Estado">
-                <option value="Not started">Not started</option>
-                <option value="In progress">In progress</option>
-                <option value="Stand By">Stand By</option>
-                <option value="Blocked">Blocked</option>
-                <option value="Done">Done</option>
-                <option value="Delayed Done">Delayed Done</option>
-              </select>
+              <label>Brief Description</label>
+              <textarea name="Brief Description" placeholder="Describe the task…" required></textarea>
             </div>
+
             <button type="submit" class="form-submit-btn">Submit Task</button>
             <div id="form-feedback" class="form-feedback"></div>
           </form>
         </div>
       </div>
+
       <div class="view" id="view-weekly"><div class="placeholder">🗓️ Weekly Calendar view coming soon</div></div>
       <div class="view" id="view-my-tasks"><div class="placeholder">✅ My Tasks view coming soon</div></div>
       <div class="view" id="view-updates"><div class="placeholder">🕐 Recent Updates view coming soon</div></div>
-
     </main>
   </div>
 

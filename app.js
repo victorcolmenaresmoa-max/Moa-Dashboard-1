@@ -115,6 +115,7 @@ let filteredData = [];
 let sortKey = null;
 let sortDir = "asc";
 let activeEditor = null;
+let createSelectedSpecialists = new Set();
 
 // ─── Fetch from SheetDB ─────────────────────────────────────────────────────
 async function fetchData() {
@@ -574,18 +575,42 @@ function initToolbar() {
   });
 }
 
-// ─── Submit Form ────────────────────────────────────────────────────────────
+// ─── Submit Form / MOA People Picker ───────────────────────────────────────
 function initSubmitForm() {
   const form = document.getElementById("submit-form");
   const feedback = document.getElementById("form-feedback");
-  const specialistsBox = document.getElementById("specialists-create-list");
+  const picker = document.getElementById("specialists-picker");
+  const trigger = document.getElementById("specialists-trigger");
+  const dropdown = document.getElementById("specialists-dropdown");
+  const search = document.getElementById("specialists-search");
 
-  specialistsBox.innerHTML = OPTIONS.specialists.map(name => `
-    <label class="checkbox-option">
-      <input type="checkbox" name="Specialists" value="${esc(name)}" />
-      <span>${esc(name)}</span>
-    </label>
-  `).join("");
+  renderCreateSpecialistOptions();
+  updateCreateSpecialistsUI();
+
+  trigger.addEventListener("click", () => {
+    const isOpen = picker.classList.toggle("is-open");
+    dropdown.hidden = !isOpen;
+    trigger.setAttribute("aria-expanded", String(isOpen));
+    if (isOpen) {
+      search.value = "";
+      renderCreateSpecialistOptions();
+      setTimeout(() => search.focus(), 0);
+    }
+  });
+
+  search.addEventListener("input", () => renderCreateSpecialistOptions(search.value));
+
+  document.addEventListener("click", (e) => {
+    if (!picker.contains(e.target)) closeCreateSpecialistPicker();
+  });
+
+  document.getElementById("selected-specialists").addEventListener("click", (e) => {
+    const removeButton = e.target.closest("[data-remove-specialist]");
+    if (!removeButton) return;
+    createSelectedSpecialists.delete(removeButton.dataset.removeSpecialist);
+    updateCreateSpecialistsUI();
+    renderCreateSpecialistOptions(search.value);
+  });
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -600,22 +625,106 @@ function initSubmitForm() {
     row["TASKS"] = (formData.get("TASKS") || "").trim();
     row["Tipo de trabajo"] = formData.get("Tipo de trabajo") || "";
     row["Vertical"] = formData.get("Vertical") || "";
-    row["Specialists"] = formData.getAll("Specialists").join(", ");
+    row["Specialists"] = Array.from(createSelectedSpecialists).join(", ");
     row["Brief Description"] = (formData.get("Brief Description") || "").trim();
 
-    // Important: Estado, Calidad, Rondas, Comments, Deadlines and specialist boxes stay empty.
-    // The specialist edits them directly from the dashboard.
+    // Estado, Calidad, Rondas, Comments, Deadlines and specialist boxes stay empty.
+    // They are edited directly from the dashboard after the task is created.
 
     const ok = await postRow(row);
     if (ok) {
       feedback.textContent = "Task submitted successfully.";
       feedback.className = "form-feedback form-feedback--success";
       form.reset();
+      createSelectedSpecialists.clear();
+      closeCreateSpecialistPicker();
+      updateCreateSpecialistsUI();
+      renderCreateSpecialistOptions();
     } else {
       feedback.textContent = "Error submitting. Check the console and your SheetDB URL.";
       feedback.className = "form-feedback form-feedback--error";
     }
   });
+}
+
+function closeCreateSpecialistPicker() {
+  const picker = document.getElementById("specialists-picker");
+  const trigger = document.getElementById("specialists-trigger");
+  const dropdown = document.getElementById("specialists-dropdown");
+  if (!picker || !trigger || !dropdown) return;
+  picker.classList.remove("is-open");
+  dropdown.hidden = true;
+  trigger.setAttribute("aria-expanded", "false");
+}
+
+function renderCreateSpecialistOptions(filter = "") {
+  const list = document.getElementById("specialists-create-list");
+  if (!list) return;
+
+  const q = filter.trim().toLowerCase();
+  const visibleSpecialists = OPTIONS.specialists.filter(name => name.toLowerCase().includes(q));
+
+  if (visibleSpecialists.length === 0) {
+    list.innerHTML = `<div class="empty-people-result">No specialist found.</div>`;
+    return;
+  }
+
+  list.innerHTML = visibleSpecialists.map(name => {
+    const selected = createSelectedSpecialists.has(name);
+    return `
+      <button type="button" class="people-option ${selected ? "is-selected" : ""}" data-specialist="${esc(name)}" role="option" aria-selected="${selected}">
+        <span class="people-option__avatar">${esc(getInitials(name))}</span>
+        <span class="people-option__name">${esc(name)}</span>
+        <span class="people-option__check">✓</span>
+      </button>`;
+  }).join("");
+
+  list.querySelectorAll(".people-option").forEach(button => {
+    button.addEventListener("click", () => {
+      const name = button.dataset.specialist;
+      if (createSelectedSpecialists.has(name)) createSelectedSpecialists.delete(name);
+      else createSelectedSpecialists.add(name);
+      updateCreateSpecialistsUI();
+      renderCreateSpecialistOptions(document.getElementById("specialists-search").value);
+    });
+  });
+}
+
+function updateCreateSpecialistsUI() {
+  const selectedBox = document.getElementById("selected-specialists");
+  const hidden = document.getElementById("specialists-hidden");
+  const trigger = document.getElementById("specialists-trigger");
+  if (!selectedBox || !hidden || !trigger) return;
+
+  const selected = Array.from(createSelectedSpecialists);
+  hidden.value = selected.join(", ");
+
+  const placeholder = trigger.querySelector(".people-picker__placeholder");
+  if (placeholder) {
+    placeholder.textContent = selected.length
+      ? `${selected.length} specialist${selected.length === 1 ? "" : "s"} selected`
+      : "Selecciona uno o varios especialistas";
+    placeholder.style.color = selected.length ? "var(--moa-ink)" : "var(--text-secondary)";
+  }
+
+  selectedBox.innerHTML = selected.map(name => `
+    <span class="selected-person-chip">
+      <span class="selected-person-chip__avatar">${esc(getInitials(name))}</span>
+      <span>${esc(name)}</span>
+      <button type="button" class="selected-person-chip__remove" data-remove-specialist="${esc(name)}" aria-label="Remove ${esc(name)}">×</button>
+    </span>
+  `).join("");
+}
+
+function getInitials(name) {
+  return String(name)
+    .replace(/^MOA\s*-\s*/i, "")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(part => part[0] || "")
+    .join("")
+    .toUpperCase();
 }
 
 // ─── Toast ──────────────────────────────────────────────────────────────────

@@ -1,13 +1,35 @@
 // ==============================================
 //  SPECIALISTS DASHBOARD — app.js
-//  Replace SHEETDB_URL with your actual endpoint
+//  IMPORTANT: For safe updates, add an "ID" column to your Google Sheet.
+//  New tasks will automatically receive an ID.
 // ==============================================
 
 const SHEETDB_URL = "https://sheetdb.io/api/v1/gi13znm24cygc";
 
-// ─── Seed data shown while SheetDB URL is not configured ───────────────────
+// ─── Options used by the dashboard dropdowns ────────────────────────────────
+const OPTIONS = {
+  tipo: ["PROJECT", "PERPETUAL", "ON-DEMAND"],
+  vertical: ["Academy", "School", "E-MOA", "Afterschool", "In-Company"],
+  estado: ["Not started", "In progress", "Stand By", "Blocked", "Delayed Done", "Done"],
+  calidad: ["Revisado y aprobado", "En revisión por especialistas", "Sin revisión de otros especialistas", "Pendiente de revisión"],
+  specialists: [
+    "Ailil Coutinho",
+    "MOA - Victor Colmenares",
+    "MrAsdrubal",
+    "Dirección Académica",
+    "MELISA MOA",
+    "Noryley Rodríguez",
+    "Roxangel Rodríguez",
+    "Norilys Cermeño",
+    "Victor Colmenares",
+    "Melisa MOA"
+  ]
+};
+
+// ─── Seed data shown while SheetDB URL is not configured ────────────────────
 const SEED_DATA = [
   {
+    "ID": "seed-001",
     "Tipo de trabajo": "PERPETUAL",
     "TASKS": "Evaluaciones",
     "Vertical": "School",
@@ -24,6 +46,7 @@ const SEED_DATA = [
     "AI Summary": ""
   },
   {
+    "ID": "seed-002",
     "Tipo de trabajo": "PERPETUAL",
     "TASKS": "English For Teachers (EFT)",
     "Vertical": "School",
@@ -40,6 +63,7 @@ const SEED_DATA = [
     "AI Summary": ""
   },
   {
+    "ID": "seed-003",
     "Tipo de trabajo": "ON-DEMAND",
     "TASKS": "Corrección de workbooks impresos para el año escolar 2026-2027",
     "Vertical": "School",
@@ -54,74 +78,45 @@ const SEED_DATA = [
     "Noryley": "", "Roxangel": "", "Ailil": "",
     "Asdrubal": "", "Norilys": "", "Victor": "", "Melisa": "Mis To-Dos * Mis fechas de ent",
     "AI Summary": "Corrección urgente de workbooks físicos para distribución en agosto 2026. Prioridad alta."
-  },
-  {
-    "Tipo de trabajo": "PROJECT",
-    "TASKS": "Rediseño del currículo Academy Q3",
-    "Vertical": "Academy",
-    "Brief Description": "Actualización completa del currículo trimestral alineado con los nuevos estándares de calidad MOA para el tercer trimestre.",
-    "Specialists": "Noryley Rodríguez, Roxangel Pérez",
-    "Fecha de Inicio y Fin": "Apr 1, 2026 – Jun 30, 2026",
-    "Estado": "Stand By",
-    "Calidad": "Pendiente de revisión",
-    "Rondas de revisión": "3",
-    "Comments": "En espera de aprobación del comité académico.",
-    "Deadline 1": "May 1, 2026", "Deadline 2": "Jun 1, 2026", "Deadline 3": "Jun 30, 2026", "Deadline 4": "",
-    "Noryley": "Mis To-Dos * Mis fechas de ent", "Roxangel": "Revisión pendiente",
-    "Ailil": "", "Asdrubal": "", "Norilys": "", "Victor": "", "Melisa": "",
-    "AI Summary": "Proyecto de rediseño curricular en pausa por aprobación institucional."
-  },
-  {
-    "Tipo de trabajo": "ON-DEMAND",
-    "TASKS": "Creación de materiales E-MOA Semana 12",
-    "Vertical": "E-MOA",
-    "Brief Description": "Producción de materiales digitales interactivos para la semana 12 del programa E-MOA.",
-    "Specialists": "Norilys Castro",
-    "Fecha de Inicio y Fin": "May 20, 2026 – May 27, 2026",
-    "Estado": "Blocked",
-    "Calidad": "Sin revisión de otros especialistas",
-    "Rondas de revisión": "",
-    "Comments": "Bloqueado por falta de assets gráficos del equipo de diseño.",
-    "Deadline 1": "May 27, 2026", "Deadline 2": "", "Deadline 3": "", "Deadline 4": "",
-    "Noryley": "", "Roxangel": "", "Ailil": "",
-    "Asdrubal": "", "Norilys": "Mis To-Dos * En espera de diseño", "Victor": "", "Melisa": "",
-    "AI Summary": ""
   }
 ];
 
-// ─── Column config: order + labels + icons ─────────────────────────────────
+// ─── Column config: order + labels + icons + editable behavior ──────────────
 const COLUMNS = [
-  { key: "Tipo de trabajo",      label: "Tipo",           icon: "🏷️",  type: "tipo" },
-  { key: "TASKS",                label: "TASKS",          icon: "📋",  type: "title" },
-  { key: "Vertical",             label: "Vertical",       icon: "📂",  type: "vertical" },
-  { key: "Brief Description",    label: "Descripción",    icon: "📄",  type: "text" },
-  { key: "Specialists",          label: "Specialists",    icon: "👥",  type: "specialists" },
-  { key: "Fecha de Inicio y Fin",label: "Fechas",         icon: "📅",  type: "daterange" },
-  { key: "Estado",               label: "Estado",         icon: "🔵",  type: "estado" },
-  { key: "Calidad",              label: "Calidad",        icon: "⭐",  type: "calidad" },
-  { key: "Rondas de revisión",   label: "Rondas",         icon: "🔄",  type: "rounds" },
-  { key: "Comments",             label: "Comments",       icon: "💬",  type: "text" },
-  { key: "Deadline 1",           label: "Deadline 1",     icon: "🗓️",  type: "date" },
-  { key: "Deadline 2",           label: "Deadline 2",     icon: "🗓️",  type: "date" },
-  { key: "Deadline 3",           label: "Deadline 3",     icon: "🗓️",  type: "date" },
-  { key: "Deadline 4",           label: "Deadline 4",     icon: "🗓️",  type: "date" },
-  { key: "Noryley",              label: "Noryley",        icon: "👤",  type: "specialist-note" },
-  { key: "Roxangel",             label: "Roxangel",       icon: "👤",  type: "specialist-note" },
-  { key: "Ailil",                label: "Ailil",          icon: "👤",  type: "specialist-note" },
-  { key: "Asdrubal",             label: "Asdrubal",       icon: "👤",  type: "specialist-note" },
-  { key: "Norilys",              label: "Norilys",        icon: "👤",  type: "specialist-note" },
-  { key: "Victor",               label: "Victor",         icon: "👤",  type: "specialist-note" },
-  { key: "Melisa",               label: "Melisa",         icon: "👤",  type: "specialist-note" },
-  { key: "AI Summary",           label: "AI Summary",     icon: "🤖",  type: "text" },
+  { key: "Tipo de trabajo",       label: "Tipo",          icon: "🏷️", type: "tipo", editable: true },
+  { key: "TASKS",                 label: "TASKS",         icon: "📋", type: "title", editable: true },
+  { key: "Vertical",              label: "Vertical",      icon: "📂", type: "vertical", editable: true },
+  { key: "Brief Description",     label: "Descripción",   icon: "📄", type: "text", editable: true },
+  { key: "Specialists",           label: "Specialists",   icon: "👥", type: "specialists", editable: true },
+  { key: "Fecha de Inicio y Fin", label: "Fechas",        icon: "📅", type: "daterange", editable: true },
+  { key: "Estado",                label: "Estado",        icon: "🔵", type: "estado", editable: true },
+  { key: "Calidad",               label: "Calidad",       icon: "⭐", type: "calidad", editable: true },
+  { key: "Rondas de revisión",    label: "Rondas",        icon: "🔄", type: "rounds", editable: true },
+  { key: "Comments",              label: "Comments",      icon: "💬", type: "text", editable: true },
+  { key: "Deadline 1",            label: "Deadline 1",    icon: "🗓️", type: "date", editable: true },
+  { key: "Deadline 2",            label: "Deadline 2",    icon: "🗓️", type: "date", editable: true },
+  { key: "Deadline 3",            label: "Deadline 3",    icon: "🗓️", type: "date", editable: true },
+  { key: "Deadline 4",            label: "Deadline 4",    icon: "🗓️", type: "date", editable: true },
+  { key: "Noryley",               label: "Noryley",       icon: "👤", type: "specialist-note", editable: true },
+  { key: "Roxangel",              label: "Roxangel",      icon: "👤", type: "specialist-note", editable: true },
+  { key: "Ailil",                 label: "Ailil",         icon: "👤", type: "specialist-note", editable: true },
+  { key: "Asdrubal",              label: "Asdrubal",      icon: "👤", type: "specialist-note", editable: true },
+  { key: "Norilys",               label: "Norilys",       icon: "👤", type: "specialist-note", editable: true },
+  { key: "Victor",                label: "Victor",        icon: "👤", type: "specialist-note", editable: true },
+  { key: "Melisa",                label: "Melisa",        icon: "👤", type: "specialist-note", editable: true },
+  { key: "AI Summary",            label: "AI Summary",    icon: "🤖", type: "text", editable: true },
 ];
+
+const ALL_SHEET_KEYS = ["ID", ...COLUMNS.map(col => col.key)];
 
 // ─── State ──────────────────────────────────────────────────────────────────
 let allData = [];
 let filteredData = [];
 let sortKey = null;
 let sortDir = "asc";
+let activeEditor = null;
 
-// ─── Fetch from SheetDB (with seed fallback) ────────────────────────────────
+// ─── Fetch from SheetDB ─────────────────────────────────────────────────────
 async function fetchData() {
   const loading = document.getElementById("loading-state");
   const errorEl  = document.getElementById("error-state");
@@ -131,9 +126,8 @@ async function fetchData() {
   errorEl.style.display = "none";
   table.style.display   = "none";
 
-  // If URL still has placeholder, use seed data
   if (SHEETDB_URL.includes("YOUR_SHEETDB_ID_HERE")) {
-    allData = SEED_DATA;
+    allData = normalizeRows(SEED_DATA);
     filteredData = [...allData];
     loading.style.display = "none";
     renderTable(filteredData);
@@ -141,12 +135,10 @@ async function fetchData() {
   }
 
   try {
-    const res = await fetch(SHEETDB_URL, {
-      headers: { "Content-Type": "application/json" }
-    });
+    const res = await fetch(SHEETDB_URL, { headers: { "Content-Type": "application/json" } });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const json = await res.json();
-    allData = Array.isArray(json) ? json : json.data || [];
+    allData = normalizeRows(Array.isArray(json) ? json : json.data || []);
     filteredData = [...allData];
     loading.style.display = "none";
     renderTable(filteredData);
@@ -157,15 +149,25 @@ async function fetchData() {
   }
 }
 
-// ─── POST new row to SheetDB ─────────────────────────────────────────────────
+function normalizeRows(rows) {
+  return rows.map((row, index) => ({
+    ...row,
+    __localIndex: index,
+    __originalTaskName: row["TASKS"] || ""
+  }));
+}
+
+// ─── POST new row to SheetDB ────────────────────────────────────────────────
 async function postRow(rowData) {
+  if (!rowData.ID) rowData.ID = createId();
+
   if (SHEETDB_URL.includes("YOUR_SHEETDB_ID_HERE")) {
-    // Fake success in demo mode
-    allData.push(rowData);
+    allData.push({ ...rowData, __localIndex: allData.length, __originalTaskName: rowData["TASKS"] || "" });
     filteredData = [...allData];
     renderTable(filteredData);
     return true;
   }
+
   try {
     const res = await fetch(SHEETDB_URL, {
       method: "POST",
@@ -181,13 +183,55 @@ async function postRow(rowData) {
   }
 }
 
-// ─── Render Table ────────────────────────────────────────────────────────────
+// ─── PATCH one cell to SheetDB ──────────────────────────────────────────────
+async function patchCell(row, key, newValue) {
+  const oldValue = row[key] || "";
+  row[key] = newValue;
+  renderTable(filteredData);
+
+  if (SHEETDB_URL.includes("YOUR_SHEETDB_ID_HERE")) return true;
+
+  // Best practice: update by ID. Fallback: update by TASKS if old rows do not have ID yet.
+  const matchColumn = row.ID ? "ID" : "TASKS";
+  const matchValue = row.ID || row.__originalTaskName || row["TASKS"];
+
+  if (!matchValue) {
+    row[key] = oldValue;
+    renderTable(filteredData);
+    showToast("This row cannot be updated because it has no ID or TASKS value.", "error");
+    return false;
+  }
+
+  try {
+    const res = await fetch(`${SHEETDB_URL}/${encodeURIComponent(matchColumn)}/${encodeURIComponent(matchValue)}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ data: { [key]: newValue } })
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (key === "TASKS") row.__originalTaskName = newValue;
+    showToast("Saved", "success");
+    return true;
+  } catch (err) {
+    console.error("PATCH error:", err);
+    row[key] = oldValue;
+    renderTable(filteredData);
+    showToast("Could not save the change. Check SheetDB and the ID column.", "error");
+    return false;
+  }
+}
+
+function createId() {
+  if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+  return `task-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+// ─── Render Table ───────────────────────────────────────────────────────────
 function renderTable(data) {
   const table = document.getElementById("main-table");
   const thead = document.getElementById("table-head-row");
   const tbody = document.getElementById("table-body");
 
-  // Build header once
   thead.innerHTML = "";
   COLUMNS.forEach(col => {
     const th = document.createElement("th");
@@ -198,7 +242,6 @@ function renderTable(data) {
     thead.appendChild(th);
   });
 
-  // Build rows
   tbody.innerHTML = "";
   if (data.length === 0) {
     const tr = document.createElement("tr");
@@ -211,11 +254,18 @@ function renderTable(data) {
     tr.appendChild(td);
     tbody.appendChild(tr);
   } else {
-    data.forEach(row => {
+    data.forEach((row, rowIndex) => {
       const tr = document.createElement("tr");
       COLUMNS.forEach(col => {
         const td = document.createElement("td");
         td.innerHTML = renderCell(row[col.key] || "", col.type, col.key);
+        td.dataset.rowIndex = String(rowIndex);
+        td.dataset.key = col.key;
+        td.dataset.type = col.type;
+        if (col.editable) {
+          td.classList.add("editable-cell");
+          td.title = "Click to edit";
+        }
         tr.appendChild(td);
       });
       tbody.appendChild(tr);
@@ -225,45 +275,35 @@ function renderTable(data) {
   table.style.display = "table";
 }
 
-// ─── Cell Renderers ──────────────────────────────────────────────────────────
-function renderCell(value, type, key) {
-  if (!value && value !== 0) return `<span class="date-empty">—</span>`;
+// ─── Cell Renderers ─────────────────────────────────────────────────────────
+function renderCell(value, type) {
+  if (!value && value !== 0) return `<span class="cell-empty"></span>`;
 
   switch (type) {
     case "title":
       return `<div class="task-title" title="${esc(value)}">${esc(value)}</div>`;
-
     case "tipo":
       return renderTipoBadge(value);
-
     case "vertical": {
-      const parts = value.split(",").map(s => s.trim()).filter(Boolean);
+      const parts = splitMulti(value);
       return `<div class="badges-col">${parts.map(p => renderVerticalBadge(p)).join("")}</div>`;
     }
-
     case "specialists": {
-      const names = value.split(",").map(s => s.trim()).filter(Boolean);
+      const names = splitMulti(value);
       return `<div class="specialists-col">${names.map((n, i) => renderAvatarChip(n, i)).join("")}</div>`;
     }
-
     case "daterange":
       return `<span class="date-range">📅 ${esc(value)}</span>`;
-
     case "date":
       return `<span class="date-range">${esc(value)}</span>`;
-
     case "estado":
       return renderEstado(value);
-
     case "calidad":
       return renderCalidad(value);
-
     case "rounds":
       return `<span class="rounds-badge">${esc(value)}</span>`;
-
     case "specialist-note":
       return `<div class="text-truncate text-small" title="${esc(value)}">${esc(value)}</div>`;
-
     case "text":
     default:
       return `<div class="text-truncate" title="${esc(value)}">${esc(value)}</div>`;
@@ -271,61 +311,48 @@ function renderCell(value, type, key) {
 }
 
 function renderTipoBadge(val) {
-  const map = {
-    "PROJECT":   "badge--project",
-    "PERPETUAL": "badge--perpetual",
-    "ON-DEMAND": "badge--ondemand"
-  };
-  const cls = map[val.toUpperCase()] || "badge--notstarted";
+  const map = { "PROJECT": "badge--project", "PERPETUAL": "badge--perpetual", "ON-DEMAND": "badge--ondemand" };
+  const cls = map[String(val).toUpperCase()] || "badge--notstarted";
   return `<span class="badge ${cls}">${esc(val)}</span>`;
 }
 
 function renderVerticalBadge(val) {
   const map = {
-    "academy":     "badge--academy",
-    "school":      "badge--school",
-    "e-moa":       "badge--emoa",
-    "afterschool": "badge--afterschool",
-    "in-company":  "badge--incompany"
+    "academy": "badge--academy", "school": "badge--school", "e-moa": "badge--emoa",
+    "afterschool": "badge--afterschool", "in-company": "badge--incompany"
   };
-  const key = val.toLowerCase().replace(/\s+/g, "-");
+  const key = String(val).toLowerCase().replace(/\s+/g, "-");
   const cls = map[key] || "badge--academy";
   return `<span class="badge ${cls}">${esc(val)}</span>`;
 }
 
 function renderAvatarChip(name, idx) {
-  const initials = name.split(/\s+/).slice(0, 2).map(w => w[0] || "").join("").toUpperCase();
+  const initials = String(name).split(/\s+/).slice(0, 2).map(w => w[0] || "").join("").toUpperCase();
   const colorClass = `avatar-${idx % 7}`;
-  return `<span class="avatar-chip">
-    <span class="avatar-initials ${colorClass}">${initials}</span>
-    ${esc(name.split(" ")[0])}
-  </span>`;
+  return `<span class="avatar-chip"><span class="avatar-initials ${colorClass}">${esc(initials)}</span>${esc(name)}</span>`;
 }
 
 function renderEstado(val) {
-  const key = val.toLowerCase().replace(/\s+/g, "");
+  const key = String(val).toLowerCase().replace(/\s+/g, "");
   const map = {
-    "notstarted":  "notstarted",
-    "inprogress":  "inprogress",
-    "standby":     "standby",
-    "blocked":     "blocked",
-    "done":        "done",
-    "delayeddone": "delayeddone"
+    "notstarted": "notstarted", "inprogress": "inprogress", "standby": "standby",
+    "blocked": "blocked", "done": "done", "delayeddone": "delayeddone"
   };
   const slug = map[key] || "notstarted";
-  return `<span class="status-pill status-pill--${slug}">
-    <span class="status-dot status-dot--${slug}"></span>
-    ${esc(val)}
-  </span>`;
+  return `<span class="status-pill status-pill--${slug}"><span class="status-dot status-dot--${slug}"></span>${esc(val)}</span>`;
 }
 
 function renderCalidad(val) {
-  const lower = val.toLowerCase();
+  const lower = String(val).toLowerCase();
   let cls = "badge--calidad-pending";
   if (lower.includes("aprobado") || lower.includes("approved")) cls = "badge--calidad-approved";
-  else if (lower.includes("revisión por")) cls = "badge--calidad-review";
+  else if (lower.includes("revisión por") || lower.includes("revision por")) cls = "badge--calidad-review";
   else if (lower.includes("sin revisión") || lower.includes("sin revision")) cls = "badge--calidad-norev";
   return `<span class="badge ${cls}">${esc(val)}</span>`;
+}
+
+function splitMulti(value) {
+  return String(value || "").split(",").map(s => s.trim()).filter(Boolean);
 }
 
 function esc(str) {
@@ -336,14 +363,162 @@ function esc(str) {
     .replace(/"/g, "&quot;");
 }
 
-// ─── Sort ────────────────────────────────────────────────────────────────────
-function handleSort(key) {
-  if (sortKey === key) {
-    sortDir = sortDir === "asc" ? "desc" : "asc";
-  } else {
-    sortKey = key;
-    sortDir = "asc";
+// ─── Inline editing ─────────────────────────────────────────────────────────
+function initInlineEditing() {
+  document.getElementById("table-body").addEventListener("click", (e) => {
+    const td = e.target.closest("td.editable-cell");
+    if (!td || e.target.closest(".inline-editor")) return;
+    const row = filteredData[Number(td.dataset.rowIndex)];
+    if (!row) return;
+    openEditor(td, row, td.dataset.key, td.dataset.type);
+  });
+}
+
+function openEditor(td, row, key, type) {
+  if (activeEditor) renderTable(filteredData);
+  activeEditor = { td, row, key };
+
+  const value = row[key] || "";
+  td.classList.add("editing");
+  td.innerHTML = getEditorHTML(value, type, key);
+
+  const firstInput = td.querySelector("input, textarea, select");
+  if (firstInput) firstInput.focus();
+
+  td.querySelector(".inline-save").addEventListener("click", async () => {
+    const newValue = getEditorValue(td, type);
+    activeEditor = null;
+    await patchCell(row, key, newValue);
+  });
+
+  td.querySelector(".inline-cancel").addEventListener("click", () => {
+    activeEditor = null;
+    renderTable(filteredData);
+  });
+}
+
+function getEditorHTML(value, type, key) {
+  if (["tipo", "estado", "calidad"].includes(type)) {
+    const list = OPTIONS[type] || [];
+    return `
+      <div class="inline-editor inline-editor--select">
+        <select class="inline-input">${list.map(opt => `<option value="${esc(opt)}" ${opt === value ? "selected" : ""}>${esc(opt)}</option>`).join("")}</select>
+        ${editorActions()}
+      </div>`;
   }
+
+  if (["vertical", "specialists"].includes(type)) {
+    const list = type === "vertical" ? OPTIONS.vertical : OPTIONS.specialists;
+    const current = splitMulti(value);
+    return `
+      <div class="inline-editor inline-editor--multi">
+        <div class="multi-options">
+          ${list.map(opt => `
+            <label class="multi-option">
+              <input type="checkbox" value="${esc(opt)}" ${current.includes(opt) ? "checked" : ""} />
+              <span>${esc(opt)}</span>
+            </label>`).join("")}
+        </div>
+        ${editorActions()}
+      </div>`;
+  }
+
+  if (type === "date") {
+    return `
+      <div class="inline-editor inline-editor--date">
+        <input class="inline-input" type="date" value="${esc(parseDateToInput(value))}" />
+        ${editorActions()}
+      </div>`;
+  }
+
+  if (type === "daterange") {
+    const [start, end] = parseDateRange(value);
+    return `
+      <div class="inline-editor inline-editor--date-range">
+        <input class="inline-input" data-range="start" type="date" value="${esc(parseDateToInput(start))}" />
+        <input class="inline-input" data-range="end" type="date" value="${esc(parseDateToInput(end))}" />
+        ${editorActions()}
+      </div>`;
+  }
+
+  const isLongText = ["Brief Description", "Comments", "AI Summary"].includes(key) || type === "specialist-note";
+  const tag = isLongText ? "textarea" : "input";
+  if (tag === "textarea") {
+    return `
+      <div class="inline-editor inline-editor--text">
+        <textarea class="inline-input" rows="4">${esc(value)}</textarea>
+        ${editorActions()}
+      </div>`;
+  }
+
+  return `
+    <div class="inline-editor inline-editor--text">
+      <input class="inline-input" type="text" value="${esc(value)}" />
+      ${editorActions()}
+    </div>`;
+}
+
+function editorActions() {
+  return `
+    <div class="inline-actions">
+      <button type="button" class="inline-save">Save</button>
+      <button type="button" class="inline-cancel">Cancel</button>
+    </div>`;
+}
+
+function getEditorValue(td, type) {
+  if (["vertical", "specialists"].includes(type)) {
+    return Array.from(td.querySelectorAll(".multi-option input:checked")).map(input => input.value).join(", ");
+  }
+
+  if (type === "date") {
+    const dateValue = td.querySelector("input[type='date']").value;
+    return dateValue ? formatDateForDisplay(dateValue) : "";
+  }
+
+  if (type === "daterange") {
+    const start = td.querySelector("input[data-range='start']").value;
+    const end = td.querySelector("input[data-range='end']").value;
+    const startText = start ? formatDateForDisplay(start) : "";
+    const endText = end ? formatDateForDisplay(end) : "";
+    if (startText && endText) return `${startText} – ${endText}`;
+    return startText || endText || "";
+  }
+
+  const input = td.querySelector("input, textarea, select");
+  return input ? input.value.trim() : "";
+}
+
+function parseDateRange(value) {
+  if (!value) return ["", ""];
+  const parts = String(value).split(/\s+[–-]\s+/);
+  return [parts[0] || "", parts[1] || ""];
+}
+
+function parseDateToInput(value) {
+  if (!value) return "";
+  const clean = String(value).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(clean)) return clean;
+  const parsed = new Date(clean);
+  if (Number.isNaN(parsed.getTime())) return "";
+  const yyyy = parsed.getFullYear();
+  const mm = String(parsed.getMonth() + 1).padStart(2, "0");
+  const dd = String(parsed.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function formatDateForDisplay(inputDate) {
+  const date = new Date(`${inputDate}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return inputDate;
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+// ─── Sort ───────────────────────────────────────────────────────────────────
+function handleSort(key) {
+  if (activeEditor) activeEditor = null;
+  if (sortKey === key) sortDir = sortDir === "asc" ? "desc" : "asc";
+  else { sortKey = key; sortDir = "asc"; }
+
   filteredData = [...filteredData].sort((a, b) => {
     const av = (a[key] || "").toString().toLowerCase();
     const bv = (b[key] || "").toString().toLowerCase();
@@ -352,27 +527,22 @@ function handleSort(key) {
   renderTable(filteredData);
 }
 
-// ─── Search ──────────────────────────────────────────────────────────────────
+// ─── Search ─────────────────────────────────────────────────────────────────
 function handleSearch(query) {
   const q = query.toLowerCase().trim();
-  if (!q) {
-    filteredData = [...allData];
-  } else {
-    filteredData = allData.filter(row =>
-      Object.values(row).some(v => String(v || "").toLowerCase().includes(q))
-    );
-  }
+  filteredData = q
+    ? allData.filter(row => Object.values(row).some(v => String(v || "").toLowerCase().includes(q)))
+    : [...allData];
   renderTable(filteredData);
 }
 
-// ─── Tabs ────────────────────────────────────────────────────────────────────
+// ─── Tabs ───────────────────────────────────────────────────────────────────
 function initTabs() {
   const tabs = document.querySelectorAll(".tab");
   tabs.forEach(tab => {
     tab.addEventListener("click", () => {
       tabs.forEach(t => t.classList.remove("tab--active"));
       tab.classList.add("tab--active");
-
       const viewId = "view-" + tab.dataset.tab;
       document.querySelectorAll(".view").forEach(v => v.classList.remove("view--active"));
       const view = document.getElementById(viewId);
@@ -381,7 +551,7 @@ function initTabs() {
   });
 }
 
-// ─── Search toggle ────────────────────────────────────────────────────────────
+// ─── Toolbar ────────────────────────────────────────────────────────────────
 function initToolbar() {
   const searchBtn = document.getElementById("btn-search");
   const searchBar = document.getElementById("search-bar");
@@ -396,7 +566,6 @@ function initToolbar() {
   searchInput.addEventListener("input", () => handleSearch(searchInput.value));
 
   document.getElementById("btn-new").addEventListener("click", () => {
-    // Switch to submit view
     document.querySelectorAll(".tab").forEach(t => t.classList.remove("tab--active"));
     const submitTab = document.querySelector('[data-tab="submit"]');
     if (submitTab) submitTab.classList.add("tab--active");
@@ -405,10 +574,18 @@ function initToolbar() {
   });
 }
 
-// ─── Submit Form ──────────────────────────────────────────────────────────────
+// ─── Submit Form ────────────────────────────────────────────────────────────
 function initSubmitForm() {
   const form = document.getElementById("submit-form");
   const feedback = document.getElementById("form-feedback");
+  const specialistsBox = document.getElementById("specialists-create-list");
+
+  specialistsBox.innerHTML = OPTIONS.specialists.map(name => `
+    <label class="checkbox-option">
+      <input type="checkbox" name="Specialists" value="${esc(name)}" />
+      <span>${esc(name)}</span>
+    </label>
+  `).join("");
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -417,42 +594,49 @@ function initSubmitForm() {
 
     const formData = new FormData(form);
     const row = {};
-    
-    // Inicializar todas las columnas para evitar undefined
-    COLUMNS.forEach(col => { row[col.key] = ""; });
-    
-    // Recorrer los datos del formulario (excepto la lista cruda de especialistas)
-    for (const [k, v] of formData.entries()) { 
-      if (k !== "Specialists_list") {
-        row[k] = v; 
-      }
-    }
+    ALL_SHEET_KEYS.forEach(key => { row[key] = ""; });
 
-    // Unir los especialistas seleccionados con comas
-    const selectedSpecialists = formData.getAll("Specialists_list");
-    if (selectedSpecialists.length > 0) {
-      row["Specialists"] = selectedSpecialists.join(", ");
-    }
+    row.ID = createId();
+    row["TASKS"] = (formData.get("TASKS") || "").trim();
+    row["Tipo de trabajo"] = formData.get("Tipo de trabajo") || "";
+    row["Vertical"] = formData.get("Vertical") || "";
+    row["Specialists"] = formData.getAll("Specialists").join(", ");
+    row["Brief Description"] = (formData.get("Brief Description") || "").trim();
 
-    // 🔥 Forzar el estado por defecto al crear
-    row["Estado"] = "Not started";
+    // Important: Estado, Calidad, Rondas, Comments, Deadlines and specialist boxes stay empty.
+    // The specialist edits them directly from the dashboard.
 
     const ok = await postRow(row);
     if (ok) {
-      feedback.textContent = "✅ Task submitted successfully!";
+      feedback.textContent = "Task submitted successfully.";
       feedback.className = "form-feedback form-feedback--success";
       form.reset();
     } else {
-      feedback.textContent = "❌ Error submitting. Check the console and your SheetDB URL.";
+      feedback.textContent = "Error submitting. Check the console and your SheetDB URL.";
       feedback.className = "form-feedback form-feedback--error";
     }
   });
 }
 
-// ─── Boot ─────────────────────────────────────────────────────────────────────
+// ─── Toast ──────────────────────────────────────────────────────────────────
+function showToast(message, type = "success") {
+  let toast = document.getElementById("toast");
+  if (!toast) {
+    toast = document.createElement("div");
+    toast.id = "toast";
+    document.body.appendChild(toast);
+  }
+  toast.textContent = message;
+  toast.className = `toast toast--${type} toast--show`;
+  clearTimeout(showToast.timer);
+  showToast.timer = setTimeout(() => toast.classList.remove("toast--show"), 1800);
+}
+
+// ─── Boot ───────────────────────────────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", () => {
   initTabs();
   initToolbar();
+  initInlineEditing();
   initSubmitForm();
   fetchData();
 });

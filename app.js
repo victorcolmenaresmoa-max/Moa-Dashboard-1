@@ -417,8 +417,25 @@ function initSubmitForm() {
 
     const formData = new FormData(form);
     const row = {};
+    
+    // Inicializar todas las columnas para evitar undefined
     COLUMNS.forEach(col => { row[col.key] = ""; });
-    for (const [k, v] of formData.entries()) { row[k] = v; }
+    
+    // Recorrer los datos del formulario (excepto la lista cruda de especialistas)
+    for (const [k, v] of formData.entries()) { 
+      if (k !== "Specialists_list") {
+        row[k] = v; 
+      }
+    }
+
+    // Unir los especialistas seleccionados con comas
+    const selectedSpecialists = formData.getAll("Specialists_list");
+    if (selectedSpecialists.length > 0) {
+      row["Specialists"] = selectedSpecialists.join(", ");
+    }
+
+    // 🔥 Forzar el estado por defecto al crear
+    row["Estado"] = "Not started";
 
     const ok = await postRow(row);
     if (ok) {

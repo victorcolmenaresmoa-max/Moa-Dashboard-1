@@ -170,7 +170,7 @@ html, body {
   min-width: 160px;
 }
 
-.text-truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-secondary); max-width: 220px; }
+.text-truncate { white-space: normal; overflow: visible; color: var(--text-primary); max-width: 260px; line-height: 1.45; }
 .text-secondary { color: var(--text-secondary); font-size: 12px; }
 .text-small { font-size: 12px; color: var(--text-light); }
 

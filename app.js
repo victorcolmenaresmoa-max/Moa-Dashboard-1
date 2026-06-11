@@ -241,8 +241,7 @@ function hasVisibleRowData(row) {
   return COLUMNS.some(col => {
     return String(row[col.key] || "").trim() !== "";
   });
-}
-
+} 
 // ─── POST new row to SheetDB ────────────────────────────────────────────────
 async function postRow(rowData) {
   const cleanRow = { ...makeEmptySheetRow(), ...rowData };
@@ -260,25 +259,24 @@ async function postRow(rowData) {
 
   console.log("Sending task to SheetDB:", sheetPayload);
 
+  const localRow = normalizeRows([sheetPayload])[0];
+
+  if (localRow) {
+    allData.push(localRow);
+    filteredData = [...allData];
+    renderTable(filteredData);
+  }
+
   if (SHEETDB_URL.includes("YOUR_SHEETDB_ID_HERE")) {
-    const localRow = normalizeRows([sheetPayload])[0];
-
-    if (localRow) {
-      allData.push(localRow);
-      filteredData = [...allData];
-      renderTable(filteredData);
-    }
-
     return true;
   }
 
   try {
-    const res = await fetch(`${SHEETDB_URL}?return_values=true`, {
+    const res = await fetch(SHEETDB_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        data: [sheetPayload],
-        return_values: true
+        data: [sheetPayload]
       })
     });
 
@@ -290,21 +288,16 @@ async function postRow(rowData) {
       throw new Error(`HTTP ${res.status}: ${responseText}`);
     }
 
-    const localRow = normalizeRows([sheetPayload])[0];
-
-    if (localRow) {
-      allData.push(localRow);
-      filteredData = [...allData];
-      renderTable(filteredData);
-    }
-
     showToast("Tarea guardada correctamente.", "success");
-
-    window.setTimeout(fetchData, 1500);
 
     return true;
   } catch (err) {
     console.error("POST error:", err);
+
+    allData = allData.filter(row => row.ID !== cleanRow.ID);
+    filteredData = filteredData.filter(row => row.ID !== cleanRow.ID);
+    renderTable(filteredData);
+
     showToast("No se pudo guardar la tarea. Revisa SheetDB, permisos y encabezados.", "error");
     return false;
   }

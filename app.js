@@ -145,6 +145,7 @@ let sortKey = null;
 let sortDir = "asc";
 let activeEditor = null;
 let createSelectedSpecialists = new Set();
+let createSelectedVerticals = new Set(); // ← NUEVO
 
 // ─── Fetch from SheetDB ─────────────────────────────────────────────────────
 async function fetchData() {
@@ -201,39 +202,30 @@ function normalizeRows(rows) {
 
 function cleanSheetRow(row) {
   const clean = {};
-
   Object.entries(row || {}).forEach(([key, value]) => {
     clean[String(key).trim()] = value == null ? "" : String(value).trim();
   });
-
   return clean;
 }
 
 function makeEmptySheetRow() {
   const row = {};
-
-  ALL_SHEET_KEYS.forEach(key => {
-    row[key] = "";
-  });
-
+  ALL_SHEET_KEYS.forEach(key => { row[key] = ""; });
   return row;
 }
 
 function serializeForSheet(row, mode = "full") {
   const keys = mode === "create"
-    ? ["ID", "Tipo de trabajo", "TASKS", "Vertical", "Brief Description", "Specialists"]
+    ? ["ID", "Tipo de trabajo", "TASKS", "Vertical", "Brief Description", "Specialists", "Deadline 1"]
     : ALL_SHEET_KEYS;
 
   const clean = {};
-
   keys.forEach(key => {
     const value = row[key];
-
     if (value !== undefined && value !== null) {
       clean[key] = String(value).trim();
     }
   });
-
   return clean;
 }
 
@@ -241,7 +233,8 @@ function hasVisibleRowData(row) {
   return COLUMNS.some(col => {
     return String(row[col.key] || "").trim() !== "";
   });
-} 
+}
+
 // ─── POST new row to SheetDB ────────────────────────────────────────────────
 async function postRow(rowData) {
   const cleanRow = { ...makeEmptySheetRow(), ...rowData };
@@ -275,13 +268,10 @@ async function postRow(rowData) {
     const res = await fetch(SHEETDB_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        data: [sheetPayload]
-      })
+      body: JSON.stringify({ data: [sheetPayload] })
     });
 
     const responseText = await res.text();
-
     console.log("SheetDB POST response:", responseText);
 
     if (!res.ok) {
@@ -289,15 +279,12 @@ async function postRow(rowData) {
     }
 
     showToast("Tarea guardada correctamente.", "success");
-
     return true;
   } catch (err) {
     console.error("POST error:", err);
-
     allData = allData.filter(row => row.ID !== cleanRow.ID);
     filteredData = filteredData.filter(row => row.ID !== cleanRow.ID);
     renderTable(filteredData);
-
     showToast("No se pudo guardar la tarea. Revisa SheetDB, permisos y encabezados.", "error");
     return false;
   }
@@ -332,11 +319,7 @@ async function patchCell(row, key, newValue) {
     const res = await fetch(`${SHEETDB_URL}/${encodeURIComponent(matchColumn)}/${encodeURIComponent(matchValue)}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        data: {
-          [key]: newValue
-        }
-      })
+      body: JSON.stringify({ data: { [key]: newValue } })
     });
 
     const responseText = await res.text();
@@ -364,7 +347,6 @@ function createId() {
   if (window.crypto && crypto.randomUUID) {
     return crypto.randomUUID();
   }
-
   return `task-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
@@ -390,13 +372,11 @@ function renderTable(data) {
   if (data.length === 0) {
     const tr = document.createElement("tr");
     const td = document.createElement("td");
-
     td.colSpan = COLUMNS.length;
     td.style.textAlign = "center";
     td.style.padding = "40px";
     td.style.color = "#787774";
     td.textContent = "No hay tareas para mostrar.";
-
     tr.appendChild(td);
     tbody.appendChild(tr);
   } else {
@@ -405,7 +385,6 @@ function renderTable(data) {
 
       COLUMNS.forEach(col => {
         const td = document.createElement("td");
-
         td.innerHTML = renderCell(row[col.key] || "", col.type, col.key);
         td.dataset.rowIndex = String(rowIndex);
         td.dataset.key = col.key;
@@ -479,9 +458,7 @@ function renderTipoBadge(val) {
     "PERPETUAL": "badge--perpetual",
     "ON-DEMAND": "badge--ondemand"
   };
-
   const cls = map[String(val).toUpperCase()] || "badge--notstarted";
-
   return `<span class="badge ${cls}">${esc(val)}</span>`;
 }
 
@@ -493,10 +470,8 @@ function renderVerticalBadge(val) {
     "afterschool": "badge--afterschool",
     "in-company": "badge--incompany"
   };
-
   const key = String(val).toLowerCase().replace(/\s+/g, "-");
   const cls = map[key] || "badge--academy";
-
   return `<span class="badge ${cls}">${esc(val)}</span>`;
 }
 
@@ -507,9 +482,7 @@ function renderAvatarChip(name, idx) {
     .map(w => w[0] || "")
     .join("")
     .toUpperCase();
-
   const colorClass = `avatar-${idx % 7}`;
-
   return `
     <span class="avatar-chip">
       <span class="avatar-initials ${colorClass}">${esc(initials)}</span>
@@ -520,7 +493,6 @@ function renderAvatarChip(name, idx) {
 
 function renderEstado(val) {
   const key = String(val).toLowerCase().replace(/\s+/g, "");
-
   const map = {
     "notstarted": "notstarted",
     "inprogress": "inprogress",
@@ -529,9 +501,7 @@ function renderEstado(val) {
     "done": "done",
     "delayeddone": "delayeddone"
   };
-
   const slug = map[key] || "notstarted";
-
   return `
     <span class="status-pill status-pill--${slug}">
       <span class="status-dot status-dot--${slug}"></span>
@@ -543,7 +513,6 @@ function renderEstado(val) {
 function renderCalidad(val) {
   const lower = String(val).toLowerCase();
   let cls = "badge--calidad-pending";
-
   if (lower.includes("aprobado") || lower.includes("approved")) {
     cls = "badge--calidad-approved";
   } else if (lower.includes("revisión por") || lower.includes("revision por")) {
@@ -551,7 +520,6 @@ function renderCalidad(val) {
   } else if (lower.includes("sin revisión") || lower.includes("sin revision")) {
     cls = "badge--calidad-norev";
   }
-
   return `<span class="badge ${cls}">${esc(val)}</span>`;
 }
 
@@ -576,18 +544,11 @@ function initInlineEditing() {
 
   tbody.addEventListener("pointerdown", e => {
     const td = e.target.closest("td.editable-cell");
-
-    if (!td || e.target.closest(".inline-editor")) {
-      return;
-    }
-
+    if (!td || e.target.closest(".inline-editor")) return;
     e.preventDefault();
     e.stopPropagation();
-
     const row = filteredData[Number(td.dataset.rowIndex)];
-
     if (!row) return;
-
     openEditor(td, row, td.dataset.key, td.dataset.type);
   });
 
@@ -605,9 +566,7 @@ function openEditor(td, row, key, type) {
   }
 
   activeEditor = { td, row, key };
-
   const value = row[key] || "";
-
   td.classList.add("editing");
   td.innerHTML = getEditorHTML(value, type, key);
 
@@ -616,37 +575,28 @@ function openEditor(td, row, key, type) {
       button.addEventListener("click", async e => {
         e.preventDefault();
         e.stopPropagation();
-
         const newValue = button.dataset.value || "";
-
         activeEditor = null;
         await patchCell(row, key, newValue);
       });
     });
 
     const cancel = td.querySelector(".quick-cancel");
-
     if (cancel) {
       cancel.addEventListener("click", e => {
         e.preventDefault();
         e.stopPropagation();
-
         activeEditor = null;
         renderTable(filteredData);
       });
     }
-
     return;
   }
 
   const firstInput = td.querySelector("input, textarea");
-
   if (firstInput) {
     firstInput.focus();
-
-    if (firstInput.select) {
-      firstInput.select();
-    }
+    if (firstInput.select) firstInput.select();
   }
 
   const saveButton = td.querySelector(".inline-save");
@@ -656,9 +606,7 @@ function openEditor(td, row, key, type) {
     saveButton.addEventListener("click", async e => {
       e.preventDefault();
       e.stopPropagation();
-
       const newValue = getEditorValue(td, type);
-
       activeEditor = null;
       await patchCell(row, key, newValue);
     });
@@ -668,7 +616,6 @@ function openEditor(td, row, key, type) {
     cancelButton.addEventListener("click", e => {
       e.preventDefault();
       e.stopPropagation();
-
       activeEditor = null;
       renderTable(filteredData);
     });
@@ -677,15 +624,12 @@ function openEditor(td, row, key, type) {
   td.querySelectorAll("input, textarea").forEach(input => {
     input.addEventListener("keydown", async e => {
       const isTextArea = input.tagName === "TEXTAREA";
-
       if (
         (e.key === "Enter" && !e.shiftKey && !isTextArea) ||
         (e.key === "Enter" && (e.ctrlKey || e.metaKey))
       ) {
         e.preventDefault();
-
         const newValue = getEditorValue(td, type);
-
         activeEditor = null;
         await patchCell(row, key, newValue);
       }
@@ -696,14 +640,12 @@ function openEditor(td, row, key, type) {
 function getEditorHTML(value, type, key) {
   if (["tipo", "estado", "calidad"].includes(type)) {
     const list = OPTIONS[type] || [];
-
     return `
       <div class="inline-editor inline-editor--quick-select" role="listbox">
         <div class="quick-select-head">
           <span>Choose an option</span>
           <button type="button" class="quick-cancel" aria-label="Cancel">×</button>
         </div>
-
         <div class="quick-options">
           ${list.map(opt => `
             <button 
@@ -726,7 +668,6 @@ function getEditorHTML(value, type, key) {
   if (["vertical", "specialists"].includes(type)) {
     const list = type === "vertical" ? OPTIONS.vertical : OPTIONS.specialists;
     const current = splitMulti(value);
-
     return `
       <div class="inline-editor inline-editor--multi">
         <div class="multi-options">
@@ -740,7 +681,6 @@ function getEditorHTML(value, type, key) {
             </label>
           `).join("")}
         </div>
-
         ${editorActions()}
       </div>
     `;
@@ -757,7 +697,6 @@ function getEditorHTML(value, type, key) {
 
   if (type === "daterange") {
     const [start, end] = parseDateRange(value);
-
     return `
       <div class="inline-editor inline-editor--date-range">
         <input class="inline-input" data-range="start" type="date" value="${esc(parseDateToInput(start))}" />
@@ -794,7 +733,6 @@ function renderOptionPreview(opt, type) {
   if (type === "tipo") return renderTipoBadge(opt);
   if (type === "estado") return renderEstado(opt);
   if (type === "calidad") return renderCalidad(opt);
-
   return esc(opt);
 }
 
@@ -822,57 +760,37 @@ function getEditorValue(td, type) {
   if (type === "daterange") {
     const start = td.querySelector("input[data-range='start']").value;
     const end = td.querySelector("input[data-range='end']").value;
-
     const startText = start ? formatDateForDisplay(start) : "";
     const endText = end ? formatDateForDisplay(end) : "";
-
     if (startText && endText) return `${startText} – ${endText}`;
-
     return startText || endText || "";
   }
 
   const input = td.querySelector("input, textarea");
-
   return input ? input.value.trim() : "";
 }
 
 function parseDateRange(value) {
   if (!value) return ["", ""];
-
   const parts = String(value).split(/\s+[–-]\s+/);
-
   return [parts[0] || "", parts[1] || ""];
 }
 
 function parseDateToInput(value) {
   if (!value) return "";
-
   const clean = String(value).trim();
-
-  if (/^\d{4}-\d{2}-\d{2}$/.test(clean)) {
-    return clean;
-  }
-
+  if (/^\d{4}-\d{2}-\d{2}$/.test(clean)) return clean;
   const parsed = new Date(clean);
-
-  if (Number.isNaN(parsed.getTime())) {
-    return "";
-  }
-
+  if (Number.isNaN(parsed.getTime())) return "";
   const yyyy = parsed.getFullYear();
   const mm = String(parsed.getMonth() + 1).padStart(2, "0");
   const dd = String(parsed.getDate()).padStart(2, "0");
-
   return `${yyyy}-${mm}-${dd}`;
 }
 
 function formatDateForDisplay(inputDate) {
   const date = new Date(`${inputDate}T00:00:00`);
-
-  if (Number.isNaN(date.getTime())) {
-    return inputDate;
-  }
-
+  if (Number.isNaN(date.getTime())) return inputDate;
   return date.toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
@@ -882,9 +800,7 @@ function formatDateForDisplay(inputDate) {
 
 // ─── Sort ───────────────────────────────────────────────────────────────────
 function handleSort(key) {
-  if (activeEditor) {
-    activeEditor = null;
-  }
+  if (activeEditor) activeEditor = null;
 
   if (sortKey === key) {
     sortDir = sortDir === "asc" ? "desc" : "asc";
@@ -896,10 +812,7 @@ function handleSort(key) {
   filteredData = [...filteredData].sort((a, b) => {
     const av = (a[key] || "").toString().toLowerCase();
     const bv = (b[key] || "").toString().toLowerCase();
-
-    return sortDir === "asc"
-      ? av.localeCompare(bv)
-      : bv.localeCompare(av);
+    return sortDir === "asc" ? av.localeCompare(bv) : bv.localeCompare(av);
   });
 
   renderTable(filteredData);
@@ -908,38 +821,25 @@ function handleSort(key) {
 // ─── Search ─────────────────────────────────────────────────────────────────
 function handleSearch(query) {
   const q = query.toLowerCase().trim();
-
   filteredData = q
     ? allData.filter(row =>
-        Object.values(row).some(v =>
-          String(v || "").toLowerCase().includes(q)
-        )
+        Object.values(row).some(v => String(v || "").toLowerCase().includes(q))
       )
     : [...allData];
-
   renderTable(filteredData);
 }
 
 // ─── Tabs ───────────────────────────────────────────────────────────────────
 function initTabs() {
   const tabs = document.querySelectorAll(".tab");
-
   tabs.forEach(tab => {
     tab.addEventListener("click", () => {
       tabs.forEach(t => t.classList.remove("tab--active"));
       tab.classList.add("tab--active");
-
       const viewId = "view-" + tab.dataset.tab;
-
-      document.querySelectorAll(".view").forEach(v => {
-        v.classList.remove("view--active");
-      });
-
+      document.querySelectorAll(".view").forEach(v => v.classList.remove("view--active"));
       const view = document.getElementById(viewId);
-
-      if (view) {
-        view.classList.add("view--active");
-      }
+      if (view) view.classList.add("view--active");
     });
   });
 }
@@ -954,42 +854,78 @@ function initToolbar() {
   if (searchBtn && searchBar && searchInput) {
     searchBtn.addEventListener("click", () => {
       const visible = searchBar.style.display !== "none";
-
       searchBar.style.display = visible ? "none" : "block";
-
-      if (!visible) {
-        searchInput.focus();
-      }
+      if (!visible) searchInput.focus();
     });
-
-    searchInput.addEventListener("input", () => {
-      handleSearch(searchInput.value);
-    });
+    searchInput.addEventListener("input", () => handleSearch(searchInput.value));
   }
 
   if (newBtn) {
     newBtn.addEventListener("click", () => {
-      document.querySelectorAll(".tab").forEach(t => {
-        t.classList.remove("tab--active");
-      });
-
+      document.querySelectorAll(".tab").forEach(t => t.classList.remove("tab--active"));
       const submitTab = document.querySelector('[data-tab="submit"]');
-
-      if (submitTab) {
-        submitTab.classList.add("tab--active");
-      }
-
-      document.querySelectorAll(".view").forEach(v => {
-        v.classList.remove("view--active");
-      });
-
+      if (submitTab) submitTab.classList.add("tab--active");
+      document.querySelectorAll(".view").forEach(v => v.classList.remove("view--active"));
       const submitView = document.getElementById("view-submit");
-
-      if (submitView) {
-        submitView.classList.add("view--active");
-      }
+      if (submitView) submitView.classList.add("view--active");
     });
   }
+}
+
+// ─── Vertical multi-picker (form) ───────────────────────────────────────────
+function initVerticalPicker() {
+  const picker   = document.getElementById("vertical-picker");
+  const trigger  = document.getElementById("vertical-trigger");
+  const dropdown = document.getElementById("vertical-dropdown");
+  const list     = document.getElementById("vertical-list");
+  if (!picker || !trigger || !dropdown || !list) return;
+
+  function renderOptions() {
+    list.innerHTML = OPTIONS.vertical.map(v => {
+      const sel = createSelectedVerticals.has(v);
+      return `<button type="button" class="people-option ${sel ? "is-selected" : ""}" data-vertical="${v}" role="option" aria-selected="${sel}">
+        <span class="people-option__name">${v}</span>
+        <span class="people-option__check">✓</span>
+      </button>`;
+    }).join("");
+
+    list.querySelectorAll(".people-option").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const v = btn.dataset.vertical;
+        createSelectedVerticals.has(v)
+          ? createSelectedVerticals.delete(v)
+          : createSelectedVerticals.add(v);
+        updateVerticalUI();
+        renderOptions();
+      });
+    });
+  }
+
+  function updateVerticalUI() {
+    const hidden      = document.getElementById("vertical-hidden");
+    const placeholder = trigger.querySelector(".people-picker__placeholder");
+    const sel = Array.from(createSelectedVerticals);
+    if (hidden) hidden.value = sel.join(", ");
+    if (placeholder) {
+      placeholder.textContent = sel.length ? sel.join(", ") : "Selecciona una o varias verticales";
+      placeholder.style.color = sel.length ? "var(--moa-ink)" : "var(--text-secondary)";
+    }
+  }
+
+  trigger.addEventListener("click", () => {
+    const isOpen = picker.classList.toggle("is-open");
+    dropdown.hidden = !isOpen;
+    trigger.setAttribute("aria-expanded", String(isOpen));
+    if (isOpen) renderOptions();
+  });
+
+  document.addEventListener("click", e => {
+    if (!picker.contains(e.target)) {
+      picker.classList.remove("is-open");
+      dropdown.hidden = true;
+      trigger.setAttribute("aria-expanded", "false");
+    }
+  });
 }
 
 // ─── Submit Form / MOA People Picker ───────────────────────────────────────
@@ -1004,23 +940,20 @@ function initSubmitForm() {
 
   if (!form) return;
 
+  initVerticalPicker(); // ← NUEVO
+
   if (picker && trigger && dropdown && search) {
     renderCreateSpecialistOptions();
     updateCreateSpecialistsUI();
 
     trigger.addEventListener("click", () => {
       const isOpen = picker.classList.toggle("is-open");
-
       dropdown.hidden = !isOpen;
       trigger.setAttribute("aria-expanded", String(isOpen));
-
       if (isOpen) {
         search.value = "";
         renderCreateSpecialistOptions();
-
-        setTimeout(() => {
-          search.focus();
-        }, 0);
+        setTimeout(() => search.focus(), 0);
       }
     });
 
@@ -1029,17 +962,13 @@ function initSubmitForm() {
     });
 
     document.addEventListener("click", e => {
-      if (!picker.contains(e.target)) {
-        closeCreateSpecialistPicker();
-      }
+      if (!picker.contains(e.target)) closeCreateSpecialistPicker();
     });
 
     if (selectedSpecialistsBox) {
       selectedSpecialistsBox.addEventListener("click", e => {
         const removeButton = e.target.closest("[data-remove-specialist]");
-
         if (!removeButton) return;
-
         createSelectedSpecialists.delete(removeButton.dataset.removeSpecialist);
         updateCreateSpecialistsUI();
         renderCreateSpecialistOptions(search.value);
@@ -1061,6 +990,8 @@ function initSubmitForm() {
     row.ID = createId();
     row["TASKS"] = String(formData.get("TASKS") || "").trim();
     row["Tipo de trabajo"] = String(formData.get("Tipo de trabajo") || "").trim();
+
+    // ← NUEVO: toma el valor del hidden de vertical (multi-select)
     row["Vertical"] = String(formData.get("Vertical") || "").trim();
 
     row["Specialists"] =
@@ -1068,6 +999,10 @@ function initSubmitForm() {
       String(formData.get("Specialists") || "").trim();
 
     row["Brief Description"] = String(formData.get("Brief Description") || "").trim();
+
+    // ← NUEVO: deadline del formulario
+    const deadlineRaw = String(formData.get("Deadline 1") || "").trim();
+    row["Deadline 1"] = deadlineRaw ? formatDateForDisplay(deadlineRaw) : "";
 
     const ok = await postRow(row);
 
@@ -1083,25 +1018,28 @@ function initSubmitForm() {
       updateCreateSpecialistsUI();
       renderCreateSpecialistOptions();
 
-      document.querySelectorAll(".tab").forEach(t => {
-        t.classList.remove("tab--active");
-      });
+      // ← NUEVO: reset del vertical picker
+      createSelectedVerticals.clear();
+      const vHidden = document.getElementById("vertical-hidden");
+      if (vHidden) vHidden.value = "";
+      const vPlaceholder = document.querySelector("#vertical-trigger .people-picker__placeholder");
+      if (vPlaceholder) {
+        vPlaceholder.textContent = "Selecciona una o varias verticales";
+        vPlaceholder.style.color = "var(--text-secondary)";
+      }
+      const vPicker = document.getElementById("vertical-picker");
+      if (vPicker) vPicker.classList.remove("is-open");
+      const vDropdown = document.getElementById("vertical-dropdown");
+      if (vDropdown) vDropdown.hidden = true;
 
+      document.querySelectorAll(".tab").forEach(t => t.classList.remove("tab--active"));
       const allTasksTab = document.querySelector('[data-tab="all-tasks"]');
+      if (allTasksTab) allTasksTab.classList.add("tab--active");
 
-      if (allTasksTab) {
-        allTasksTab.classList.add("tab--active");
-      }
-
-      document.querySelectorAll(".view").forEach(v => {
-        v.classList.remove("view--active");
-      });
-
+      document.querySelectorAll(".view").forEach(v => v.classList.remove("view--active"));
       const allTasksView = document.getElementById("view-all-tasks");
+      if (allTasksView) allTasksView.classList.add("view--active");
 
-      if (allTasksView) {
-        allTasksView.classList.add("view--active");
-      }
     } else {
       if (feedback) {
         feedback.textContent = "No se pudo guardar. Revisa SheetDB, el URL y que los encabezados de la hoja coincidan.";
@@ -1115,9 +1053,7 @@ function closeCreateSpecialistPicker() {
   const picker = document.getElementById("specialists-picker");
   const trigger = document.getElementById("specialists-trigger");
   const dropdown = document.getElementById("specialists-dropdown");
-
   if (!picker || !trigger || !dropdown) return;
-
   picker.classList.remove("is-open");
   dropdown.hidden = true;
   trigger.setAttribute("aria-expanded", "false");
@@ -1125,11 +1061,9 @@ function closeCreateSpecialistPicker() {
 
 function renderCreateSpecialistOptions(filter = "") {
   const list = document.getElementById("specialists-create-list");
-
   if (!list) return;
 
   const q = filter.trim().toLowerCase();
-
   const visibleSpecialists = OPTIONS.specialists.filter(name =>
     name.toLowerCase().includes(q)
   );
@@ -1141,7 +1075,6 @@ function renderCreateSpecialistOptions(filter = "") {
 
   list.innerHTML = visibleSpecialists.map(name => {
     const selected = createSelectedSpecialists.has(name);
-
     return `
       <button 
         type="button" 
@@ -1160,15 +1093,12 @@ function renderCreateSpecialistOptions(filter = "") {
   list.querySelectorAll(".people-option").forEach(button => {
     button.addEventListener("click", () => {
       const name = button.dataset.specialist;
-
       if (createSelectedSpecialists.has(name)) {
         createSelectedSpecialists.delete(name);
       } else {
         createSelectedSpecialists.add(name);
       }
-
       updateCreateSpecialistsUI();
-
       const searchInput = document.getElementById("specialists-search");
       renderCreateSpecialistOptions(searchInput ? searchInput.value : "");
     });
@@ -1179,23 +1109,17 @@ function updateCreateSpecialistsUI() {
   const selectedBox = document.getElementById("selected-specialists");
   const hidden = document.getElementById("specialists-hidden");
   const trigger = document.getElementById("specialists-trigger");
-
   if (!selectedBox || !hidden || !trigger) return;
 
   const selected = Array.from(createSelectedSpecialists);
-
   hidden.value = selected.join(", ");
 
   const placeholder = trigger.querySelector(".people-picker__placeholder");
-
   if (placeholder) {
     placeholder.textContent = selected.length
       ? `${selected.length} specialist${selected.length === 1 ? "" : "s"} selected`
       : "Selecciona uno o varios especialistas";
-
-    placeholder.style.color = selected.length
-      ? "var(--moa-ink)"
-      : "var(--text-secondary)";
+    placeholder.style.color = selected.length ? "var(--moa-ink)" : "var(--text-secondary)";
   }
 
   selectedBox.innerHTML = selected.map(name => `
@@ -1228,18 +1152,14 @@ function getInitials(name) {
 // ─── Toast ──────────────────────────────────────────────────────────────────
 function showToast(message, type = "success") {
   let toast = document.getElementById("toast");
-
   if (!toast) {
     toast = document.createElement("div");
     toast.id = "toast";
     document.body.appendChild(toast);
   }
-
   toast.textContent = message;
   toast.className = `toast toast--${type} toast--show`;
-
   clearTimeout(showToast.timer);
-
   showToast.timer = setTimeout(() => {
     toast.classList.remove("toast--show");
   }, 2200);

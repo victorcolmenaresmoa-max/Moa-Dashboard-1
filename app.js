@@ -133,7 +133,7 @@ const COLUMNS = [
   { key: "Norilys",               label: "Norilys",       icon: "👤", type: "specialist-note", editable: true },
   { key: "Victor",                label: "Victor",        icon: "👤", type: "specialist-note", editable: true },
   { key: "Melisa",                label: "Melisa",        icon: "👤", type: "specialist-note", editable: true },
-  { key: "AI Summary",            label: "AI Summary",    icon: "🤖", type: "text", editable: true },
+  { key: "AI Summary",            label: "AI Summary",    icon: "🤖", type: "text", editable: true }
 ];
 
 const ALL_SHEET_KEYS = ["ID", ...COLUMNS.map(col => col.key)];
@@ -172,7 +172,9 @@ async function fetchData() {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
     const json = await res.json();
-    allData = normalizeRows(Array.isArray(json) ? json : json.data || []);
+    const rows = Array.isArray(json) ? json : json.data || [];
+
+    allData = normalizeRows(rows);
     filteredData = [...allData];
 
     loading.style.display = "none";
@@ -201,7 +203,7 @@ function cleanSheetRow(row) {
   const clean = {};
 
   Object.entries(row || {}).forEach(([key, value]) => {
-    clean[String(key).trim()] = value == null ? "" : String(value);
+    clean[String(key).trim()] = value == null ? "" : String(value).trim();
   });
 
   return clean;
@@ -209,22 +211,36 @@ function cleanSheetRow(row) {
 
 function makeEmptySheetRow() {
   const row = {};
+
   ALL_SHEET_KEYS.forEach(key => {
     row[key] = "";
   });
+
   return row;
 }
 
-function serializeForSheet(row) {
+function serializeForSheet(row, mode = "full") {
+  const keys = mode === "create"
+    ? ["ID", "Tipo de trabajo", "TASKS", "Vertical", "Brief Description", "Specialists"]
+    : ALL_SHEET_KEYS;
+
   const clean = {};
-  ALL_SHEET_KEYS.forEach(key => {
-    clean[key] = row[key] == null ? "" : String(row[key]);
+
+  keys.forEach(key => {
+    const value = row[key];
+
+    if (value !== undefined && value !== null) {
+      clean[key] = String(value).trim();
+    }
   });
+
   return clean;
 }
 
 function hasVisibleRowData(row) {
-  return ALL_SHEET_KEYS.some(key => String(row[key] || "").trim() !== "");
+  return COLUMNS.some(col => {
+    return String(row[col.key] || "").trim() !== "";
+  });
 }
 
 // ─── POST new row to SheetDB ────────────────────────────────────────────────
@@ -240,40 +256,56 @@ async function postRow(rowData) {
     return false;
   }
 
-  const sheetPayload = serializeForSheet(cleanRow);
+  const sheetPayload = serializeForSheet(cleanRow, "create");
+
+  console.log("Sending task to SheetDB:", sheetPayload);
 
   if (SHEETDB_URL.includes("YOUR_SHEETDB_ID_HERE")) {
     const localRow = normalizeRows([sheetPayload])[0];
-    allData.push(localRow);
-    filteredData = [...allData];
-    renderTable(filteredData);
+
+    if (localRow) {
+      allData.push(localRow);
+      filteredData = [...allData];
+      renderTable(filteredData);
+    }
+
     return true;
   }
 
   try {
-    const res = await fetch(SHEETDB_URL, {
+    const res = await fetch(`${SHEETDB_URL}?return_values=true`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ data: [sheetPayload] })
+      body: JSON.stringify({
+        data: [sheetPayload],
+        return_values: true
+      })
     });
 
     const responseText = await res.text();
+
+    console.log("SheetDB POST response:", responseText);
 
     if (!res.ok) {
       throw new Error(`HTTP ${res.status}: ${responseText}`);
     }
 
     const localRow = normalizeRows([sheetPayload])[0];
-    allData.push(localRow);
-    filteredData = [...allData];
-    renderTable(filteredData);
 
-    window.setTimeout(fetchData, 700);
+    if (localRow) {
+      allData.push(localRow);
+      filteredData = [...allData];
+      renderTable(filteredData);
+    }
+
+    showToast("Tarea guardada correctamente.", "success");
+
+    window.setTimeout(fetchData, 1500);
 
     return true;
   } catch (err) {
     console.error("POST error:", err);
-    showToast("No se pudo guardar la tarea. Revisa SheetDB o los encabezados de la hoja.", "error");
+    showToast("No se pudo guardar la tarea. Revisa SheetDB, permisos y encabezados.", "error");
     return false;
   }
 }
@@ -924,38 +956,47 @@ function initToolbar() {
   const searchBtn = document.getElementById("btn-search");
   const searchBar = document.getElementById("search-bar");
   const searchInput = document.getElementById("search-input");
+  const newBtn = document.getElementById("btn-new");
 
-  searchBtn.addEventListener("click", () => {
-    const visible = searchBar.style.display !== "none";
+  if (searchBtn && searchBar && searchInput) {
+    searchBtn.addEventListener("click", () => {
+      const visible = searchBar.style.display !== "none";
 
-    searchBar.style.display = visible ? "none" : "block";
+      searchBar.style.display = visible ? "none" : "block";
 
-    if (!visible) {
-      searchInput.focus();
-    }
-  });
-
-  searchInput.addEventListener("input", () => {
-    handleSearch(searchInput.value);
-  });
-
-  document.getElementById("btn-new").addEventListener("click", () => {
-    document.querySelectorAll(".tab").forEach(t => {
-      t.classList.remove("tab--active");
+      if (!visible) {
+        searchInput.focus();
+      }
     });
 
-    const submitTab = document.querySelector('[data-tab="submit"]');
-
-    if (submitTab) {
-      submitTab.classList.add("tab--active");
-    }
-
-    document.querySelectorAll(".view").forEach(v => {
-      v.classList.remove("view--active");
+    searchInput.addEventListener("input", () => {
+      handleSearch(searchInput.value);
     });
+  }
 
-    document.getElementById("view-submit").classList.add("view--active");
-  });
+  if (newBtn) {
+    newBtn.addEventListener("click", () => {
+      document.querySelectorAll(".tab").forEach(t => {
+        t.classList.remove("tab--active");
+      });
+
+      const submitTab = document.querySelector('[data-tab="submit"]');
+
+      if (submitTab) {
+        submitTab.classList.add("tab--active");
+      }
+
+      document.querySelectorAll(".view").forEach(v => {
+        v.classList.remove("view--active");
+      });
+
+      const submitView = document.getElementById("view-submit");
+
+      if (submitView) {
+        submitView.classList.add("view--active");
+      }
+    });
+  }
 }
 
 // ─── Submit Form / MOA People Picker ───────────────────────────────────────
@@ -966,76 +1007,113 @@ function initSubmitForm() {
   const trigger = document.getElementById("specialists-trigger");
   const dropdown = document.getElementById("specialists-dropdown");
   const search = document.getElementById("specialists-search");
+  const selectedSpecialistsBox = document.getElementById("selected-specialists");
 
-  renderCreateSpecialistOptions();
-  updateCreateSpecialistsUI();
+  if (!form) return;
 
-  trigger.addEventListener("click", () => {
-    const isOpen = picker.classList.toggle("is-open");
-
-    dropdown.hidden = !isOpen;
-    trigger.setAttribute("aria-expanded", String(isOpen));
-
-    if (isOpen) {
-      search.value = "";
-      renderCreateSpecialistOptions();
-
-      setTimeout(() => {
-        search.focus();
-      }, 0);
-    }
-  });
-
-  search.addEventListener("input", () => {
-    renderCreateSpecialistOptions(search.value);
-  });
-
-  document.addEventListener("click", e => {
-    if (!picker.contains(e.target)) {
-      closeCreateSpecialistPicker();
-    }
-  });
-
-  document.getElementById("selected-specialists").addEventListener("click", e => {
-    const removeButton = e.target.closest("[data-remove-specialist]");
-
-    if (!removeButton) return;
-
-    createSelectedSpecialists.delete(removeButton.dataset.removeSpecialist);
+  if (picker && trigger && dropdown && search) {
+    renderCreateSpecialistOptions();
     updateCreateSpecialistsUI();
-    renderCreateSpecialistOptions(search.value);
-  });
+
+    trigger.addEventListener("click", () => {
+      const isOpen = picker.classList.toggle("is-open");
+
+      dropdown.hidden = !isOpen;
+      trigger.setAttribute("aria-expanded", String(isOpen));
+
+      if (isOpen) {
+        search.value = "";
+        renderCreateSpecialistOptions();
+
+        setTimeout(() => {
+          search.focus();
+        }, 0);
+      }
+    });
+
+    search.addEventListener("input", () => {
+      renderCreateSpecialistOptions(search.value);
+    });
+
+    document.addEventListener("click", e => {
+      if (!picker.contains(e.target)) {
+        closeCreateSpecialistPicker();
+      }
+    });
+
+    if (selectedSpecialistsBox) {
+      selectedSpecialistsBox.addEventListener("click", e => {
+        const removeButton = e.target.closest("[data-remove-specialist]");
+
+        if (!removeButton) return;
+
+        createSelectedSpecialists.delete(removeButton.dataset.removeSpecialist);
+        updateCreateSpecialistsUI();
+        renderCreateSpecialistOptions(search.value);
+      });
+    }
+  }
 
   form.addEventListener("submit", async e => {
     e.preventDefault();
 
-    feedback.textContent = "Submitting…";
-    feedback.className = "form-feedback";
+    if (feedback) {
+      feedback.textContent = "Submitting…";
+      feedback.className = "form-feedback";
+    }
 
     const formData = new FormData(form);
     const row = makeEmptySheetRow();
 
     row.ID = createId();
-    row["TASKS"] = (formData.get("TASKS") || "").trim();
-    row["Tipo de trabajo"] = formData.get("Tipo de trabajo") || "";
-    row["Vertical"] = formData.get("Vertical") || "";
-    row["Specialists"] = Array.from(createSelectedSpecialists).join(", ");
-    row["Brief Description"] = (formData.get("Brief Description") || "").trim();
+    row["TASKS"] = String(formData.get("TASKS") || "").trim();
+    row["Tipo de trabajo"] = String(formData.get("Tipo de trabajo") || "").trim();
+    row["Vertical"] = String(formData.get("Vertical") || "").trim();
+
+    row["Specialists"] =
+      Array.from(createSelectedSpecialists).join(", ") ||
+      String(formData.get("Specialists") || "").trim();
+
+    row["Brief Description"] = String(formData.get("Brief Description") || "").trim();
 
     const ok = await postRow(row);
 
     if (ok) {
-      feedback.textContent = "Tarea guardada correctamente.";
-      feedback.className = "form-feedback form-feedback--success";
+      if (feedback) {
+        feedback.textContent = "Tarea guardada correctamente.";
+        feedback.className = "form-feedback form-feedback--success";
+      }
 
       form.reset();
       createSelectedSpecialists.clear();
       closeCreateSpecialistPicker();
       updateCreateSpecialistsUI();
       renderCreateSpecialistOptions();
+
+      document.querySelectorAll(".tab").forEach(t => {
+        t.classList.remove("tab--active");
+      });
+
+      const allTasksTab = document.querySelector('[data-tab="all-tasks"]');
+
+      if (allTasksTab) {
+        allTasksTab.classList.add("tab--active");
+      }
+
+      document.querySelectorAll(".view").forEach(v => {
+        v.classList.remove("view--active");
+      });
+
+      const allTasksView = document.getElementById("view-all-tasks");
+
+      if (allTasksView) {
+        allTasksView.classList.add("view--active");
+      }
     } else {
-      feedback.textContent = "No se pudo guardar. Revisa SheetDB, el URL y que los encabezados de la hoja coincidan.";
-      feedback.className = "form-feedback form-feedback--error";
+      if (feedback) {
+        feedback.textContent = "No se pudo guardar. Revisa SheetDB, el URL y que los encabezados de la hoja coincidan.";
+        feedback.className = "form-feedback form-feedback--error";
+      }
     }
   });
 }
@@ -1097,7 +1175,9 @@ function renderCreateSpecialistOptions(filter = "") {
       }
 
       updateCreateSpecialistsUI();
-      renderCreateSpecialistOptions(document.getElementById("specialists-search").value);
+
+      const searchInput = document.getElementById("specialists-search");
+      renderCreateSpecialistOptions(searchInput ? searchInput.value : "");
     });
   });
 }
@@ -1169,7 +1249,7 @@ function showToast(message, type = "success") {
 
   showToast.timer = setTimeout(() => {
     toast.classList.remove("toast--show");
-  }, 1800);
+  }, 2200);
 }
 
 // ─── Boot ───────────────────────────────────────────────────────────────────

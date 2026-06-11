@@ -108,17 +108,20 @@
                   </select>
                 </div>
 
-                <div class="form-group">
+<div class="form-group">
                   <label>Vertical</label>
-                  <select name="Vertical" required>
-                    <option value="School">School</option>
-                    <option value="Academy">Academy</option>
-                    <option value="E-MOA">E-MOA</option>
-                    <option value="Afterschool">Afterschool</option>
-                    <option value="In-Company">In-Company</option>
-                  </select>
+                  <div class="people-picker" id="vertical-picker">
+                    <button type="button" class="people-picker__trigger" id="vertical-trigger" aria-haspopup="listbox" aria-expanded="false">
+                      <span class="people-picker__placeholder">Selecciona una o varias verticales</span>
+                      <span class="people-picker__chevron">⌄</span>
+                    </button>
+                    <div class="selected-people" id="selected-verticals" aria-live="polite"></div>
+                    <div class="people-picker__dropdown" id="vertical-dropdown" hidden>
+                      <div class="people-picker__list" id="vertical-list" role="listbox" aria-multiselectable="true"></div>
+                    </div>
+                  </div>
+                  <input type="hidden" name="Vertical" id="vertical-hidden" />
                 </div>
-              </div>
 
               <div class="form-group form-group--full">
                 <label>Specialists</label>

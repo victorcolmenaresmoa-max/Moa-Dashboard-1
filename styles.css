@@ -148,11 +148,12 @@ html, body {
 .notion-table tbody tr:hover { background: var(--bg-hover-row); }
 
 .notion-table tbody td {
-  padding: 7px 10px;
-  vertical-align: top;
-  max-width: 260px;
+  padding: 10px 12px;
+  vertical-align: middle;
+  max-width: 360px;
   min-width: 90px;
-  height: 42px;
+  min-height: 52px;
+  height: auto;
 }
 
 .editable-cell { cursor: pointer; border: 1px solid transparent; }
@@ -163,6 +164,7 @@ html, body {
 
 .task-title {
   font-weight: 600;
+  font-size: 13px;
   color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden; text-overflow: ellipsis;
@@ -170,7 +172,7 @@ html, body {
   min-width: 160px;
 }
 
-.text-truncate { white-space: normal; overflow: visible; color: var(--text-primary); max-width: 260px; line-height: 1.45; }
+.text-truncate { white-space: normal; overflow: visible; color: var(--text-primary); max-width: 360px; min-width: 220px; line-height: 1.5; font-size: 12px; }
 .text-secondary { color: var(--text-secondary); font-size: 12px; }
 .text-small { font-size: 12px; color: var(--text-light); }
 

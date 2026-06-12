@@ -7,7 +7,6 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-
   <div class="app">
     <header class="page-header">
       <div class="page-header__icon page-header__icon--logo"><img src="moa-logo.png" alt="MOA" /></div>
@@ -88,7 +87,7 @@
               <div>
                 <p class="eyebrow">MOA Education · Specialists Dashboard</p>
                 <h2>Nueva tarea</h2>
-                <p class="form-note">Crea solo la información base. Estado, Calidad, Rondas, Comments, Deadlines y los cuadros de especialistas se completan desde el dashboard.</p>
+                <p class="form-note">Crea la información base. Luego puedes abrir la tarea desde All Tasks y añadir sub-items como en Notion.</p>
               </div>
             </div>
 
@@ -108,7 +107,7 @@
                   </select>
                 </div>
 
-<div class="form-group">
+                <div class="form-group">
                   <label>Vertical</label>
                   <div class="people-picker" id="vertical-picker">
                     <button type="button" class="people-picker__trigger" id="vertical-trigger" aria-haspopup="listbox" aria-expanded="false">
@@ -122,6 +121,7 @@
                   </div>
                   <input type="hidden" name="Vertical" id="vertical-hidden" />
                 </div>
+              </div>
 
               <div class="form-group form-group--full">
                 <label>Specialists</label>
@@ -147,11 +147,12 @@
                 <label>Brief Description</label>
                 <textarea name="Brief Description" placeholder="Describe la tarea de forma clara y accionable…" required></textarea>
               </div>
+
               <div class="form-group form-group--full">
                 <label>Overall task deadline</label>
                 <input type="date" name="Deadline 1" id="deadline-input" />
               </div>
-  
+
               <div class="submit-actions-row">
                 <button type="submit" class="form-submit-btn">Submit Task</button>
                 <div id="form-feedback" class="form-feedback"></div>

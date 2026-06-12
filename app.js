@@ -1,10 +1,13 @@
 // ==============================================
 //  SPECIALISTS DASHBOARD — app.js
-//  IMPORTANT: For safe updates, add an "ID" column to your Google Sheet.
-//  New tasks will automatically receive an ID.
+//  Sub-items version
+//  IMPORTANT: For sub-items to persist in Google Sheets,
+//  add this exact column header to your sheet: Parent ID
 // ==============================================
 
 const SHEETDB_URL = "https://sheetdb.io/api/v1/gyv0xbdbfuged";
+const PARENT_ID_KEY = "Parent ID";
+const OPEN_SUBITEMS_STORAGE_KEY = "moa-dashboard-open-subitems-v1";
 
 // ─── Options used by the dashboard dropdowns ────────────────────────────────
 const OPTIONS = {
@@ -31,95 +34,9 @@ const OPTIONS = {
   ]
 };
 
-// ─── Seed data shown while SheetDB URL is not configured ────────────────────
-const SEED_DATA = [
-  {
-    "ID": "seed-001",
-    "Tipo de trabajo": "PERPETUAL",
-    "TASKS": "Evaluaciones",
-    "Vertical": "School",
-    "Brief Description": "Creación de los instrumentos de evaluación para todo el ecosistema MOA.",
-    "Specialists": "Ailil Coutinho, Victor Colmenares",
-    "Fecha de Inicio y Fin": "",
-    "Estado": "In progress",
-    "Calidad": "",
-    "Rondas de revisión": "",
-    "Comments": "",
-    "Deadline 1": "",
-    "Deadline 2": "",
-    "Deadline 3": "",
-    "Deadline 4": "",
-    "Victor Colmenares": "Mis To-Dos * Mis fechas de ent",
-    "Roxangel Rodriguez": "",
-    "Ailil Coutinho": "Pruebas Externas Colegios, últi",
-    "Norilys Cermeño": "",
-    "Dirección Académica": "",
-    "Veronica Gonzales": "",
-    "Melisa Espinal": "",
-    "Noryley Suescun": "",
-    "Ninfa Vivas": "",
-    "Asdrubal Marquez": "",
-    "AI Summary": ""
-  },
-  {
-    "ID": "seed-002",
-    "Tipo de trabajo": "PERPETUAL",
-    "TASKS": "English For Teachers (EFT)",
-    "Vertical": "School",
-    "Brief Description": "Enseña inglés al equipo docente de MOA School. Cada docente recibe una sesión sincrónica semanal y, cada dos semanas, un paquete de actividades para trabajar de forma autónoma.",
-    "Specialists": "Asdrubal Marquez",
-    "Fecha de Inicio y Fin": "",
-    "Estado": "In progress",
-    "Calidad": "",
-    "Rondas de revisión": "2",
-    "Comments": "Cada unidad contiene: 1 video presentación, 1 actividad de audio, 1 actividad de vocabulario, 2 prácticas de gramática, 1 creación de diálogo, 2 juegos flash, 1 proyecto",
-    "Deadline 1": "",
-    "Deadline 2": "",
-    "Deadline 3": "",
-    "Deadline 4": "",
-    "Victor Colmenares": "",
-    "Roxangel Rodriguez": "",
-    "Ailil Coutinho": "",
-    "Norilys Cermeño": "",
-    "Dirección Académica": "",
-    "Veronica Gonzales": "",
-    "Melisa Espinal": "",
-    "Noryley Suescun": "",
-    "Ninfa Vivas": "",
-    "Asdrubal Marquez": "Mis To-Dos * Mis fechas de ent",
-    "AI Summary": ""
-  },
-  {
-    "ID": "seed-003",
-    "Tipo de trabajo": "ON-DEMAND",
-    "TASKS": "Corrección de workbooks impresos para el año escolar 2026-2027",
-    "Vertical": "School",
-    "Brief Description": "Revisión y corrección rápida de workbooks MOA School. Errores tipográficos, de contenido y de maquetación detectados.",
-    "Specialists": "Melisa Espinal, Dirección Académica",
-    "Fecha de Inicio y Fin": "May 5, 2026 – May 22, 2026",
-    "Estado": "In progress",
-    "Calidad": "En revisión por especialistas",
-    "Rondas de revisión": "1",
-    "Comments": "",
-    "Deadline 1": "May 10, 2026",
-    "Deadline 2": "May 15, 2026",
-    "Deadline 3": "",
-    "Deadline 4": "",
-    "Victor Colmenares": "",
-    "Roxangel Rodriguez": "",
-    "Ailil Coutinho": "",
-    "Norilys Cermeño": "",
-    "Dirección Académica": "",
-    "Veronica Gonzales": "",
-    "Melisa Espinal": "Mis To-Dos * Mis fechas de ent",
-    "Noryley Suescun": "",
-    "Ninfa Vivas": "",
-    "Asdrubal Marquez": "",
-    "AI Summary": "Corrección urgente de workbooks físicos para distribución en agosto 2026. Prioridad alta."
-  }
-];
-
-// ─── Column config: order + labels + icons + editable behavior ──────────────
+// These are the visible columns in the table. Keep the key names equal to the
+// headers in Google Sheets. Sub-items are stored as normal rows whose "Parent ID"
+// points to the parent task's ID.
 const COLUMNS = [
   { key: "Tipo de trabajo",       label: "Tipo",          icon: "🏷️", type: "tipo", editable: true },
   { key: "TASKS",                 label: "TASKS",         icon: "📋", type: "title", editable: true },
@@ -135,20 +52,136 @@ const COLUMNS = [
   { key: "Deadline 2",            label: "Deadline 2",    icon: "🗓️", type: "date", editable: true },
   { key: "Deadline 3",            label: "Deadline 3",    icon: "🗓️", type: "date", editable: true },
   { key: "Deadline 4",            label: "Deadline 4",    icon: "🗓️", type: "date", editable: true },
-  { key: "Victor Colmenares",      label: "Victor Colmenares",     icon: "👤", type: "specialist-note", editable: true },
-  { key: "Roxangel Rodriguez",     label: "Roxangel Rodriguez",    icon: "👤", type: "specialist-note", editable: true },
-  { key: "Ailil Coutinho",         label: "Ailil Coutinho",        icon: "👤", type: "specialist-note", editable: true },
-  { key: "Norilys Cermeño",        label: "Norilys Cermeño",       icon: "👤", type: "specialist-note", editable: true },
-  { key: "Dirección Académica",    label: "Dirección Académica",   icon: "👤", type: "specialist-note", editable: true },
-  { key: "Veronica Gonzales",      label: "Veronica Gonzales",     icon: "👤", type: "specialist-note", editable: true },
-  { key: "Melisa Espinal",         label: "Melisa Espinal",        icon: "👤", type: "specialist-note", editable: true },
-  { key: "Noryley Suescun",        label: "Noryley Suescun",       icon: "👤", type: "specialist-note", editable: true },
-  { key: "Ninfa Vivas",            label: "Ninfa Vivas",           icon: "👤", type: "specialist-note", editable: true },
-  { key: "Asdrubal Marquez",       label: "Asdrubal Marquez",      icon: "👤", type: "specialist-note", editable: true },
+  { key: "Noryley",               label: "Noryley",       icon: "👤", type: "specialist-note", editable: true },
+  { key: "Roxangel",              label: "Roxangel",      icon: "👤", type: "specialist-note", editable: true },
+  { key: "Ailil",                 label: "Ailil",         icon: "👤", type: "specialist-note", editable: true },
+  { key: "Asdrubal",              label: "Asdrubal",      icon: "👤", type: "specialist-note", editable: true },
+  { key: "Norilys",               label: "Norilys",       icon: "👤", type: "specialist-note", editable: true },
+  { key: "Victor",                label: "Victor",        icon: "👤", type: "specialist-note", editable: true },
+  { key: "Melisa",                label: "Melisa",        icon: "👤", type: "specialist-note", editable: true },
   { key: "AI Summary",            label: "AI Summary",    icon: "🤖", type: "text", editable: true }
 ];
 
-const ALL_SHEET_KEYS = ["ID", ...COLUMNS.map(col => col.key)];
+const COLUMN_ALIASES = {
+  "Noryley": ["Noryley Suescun"],
+  "Roxangel": ["Roxangel Rodriguez"],
+  "Ailil": ["Ailil Coutinho"],
+  "Asdrubal": ["Asdrubal Marquez"],
+  "Norilys": ["Norilys Cermeño", "Norilys Cermeno"],
+  "Victor": ["Victor Colmenares"],
+  "Melisa": ["Melisa Espinal"],
+  [PARENT_ID_KEY]: ["ParentID", "Parent Id", "Parent id", "Subitem Parent", "Parent Task ID"]
+};
+
+const ALL_SHEET_KEYS = ["ID", PARENT_ID_KEY, ...COLUMNS.map(col => col.key)];
+
+// ─── Seed data shown while SheetDB URL is not configured ────────────────────
+const SEED_DATA = [
+  {
+    "ID": "seed-001",
+    [PARENT_ID_KEY]: "",
+    "Tipo de trabajo": "PERPETUAL",
+    "TASKS": "Evaluaciones",
+    "Vertical": "School",
+    "Brief Description": "Creación de los instrumentos de evaluación para todo el ecosistema MOA.",
+    "Specialists": "Ailil Coutinho, Victor Colmenares",
+    "Fecha de Inicio y Fin": "",
+    "Estado": "In progress",
+    "Calidad": "",
+    "Rondas de revisión": "",
+    "Comments": "",
+    "Deadline 1": "",
+    "Deadline 2": "",
+    "Deadline 3": "",
+    "Deadline 4": "",
+    "Noryley": "",
+    "Roxangel": "",
+    "Ailil": "Pruebas Externas Colegios, último lote",
+    "Asdrubal": "",
+    "Norilys": "",
+    "Victor": "Mis To-Dos · Mis fechas de entrega",
+    "Melisa": "",
+    "AI Summary": ""
+  },
+  {
+    "ID": "seed-001-a",
+    [PARENT_ID_KEY]: "seed-001",
+    "Tipo de trabajo": "ON-DEMAND",
+    "TASKS": "Pruebas regulares — Competencias 12 y 13",
+    "Vertical": "School",
+    "Brief Description": "Versiones desde 3GV2Ñ hasta 1ÑV5Ñ.",
+    "Specialists": "Ailil Coutinho, Victor Colmenares",
+    "Fecha de Inicio y Fin": "Apr 13, 2026 – Apr 17, 2026",
+    "Estado": "Done",
+    "Calidad": "",
+    "Rondas de revisión": "",
+    "Comments": "",
+    "Deadline 1": "",
+    "Deadline 2": "",
+    "Deadline 3": "",
+    "Deadline 4": "",
+    "Noryley": "",
+    "Roxangel": "",
+    "Ailil": "",
+    "Asdrubal": "",
+    "Norilys": "",
+    "Victor": "",
+    "Melisa": "",
+    "AI Summary": ""
+  },
+  {
+    "ID": "seed-001-b",
+    [PARENT_ID_KEY]: "seed-001",
+    "Tipo de trabajo": "ON-DEMAND",
+    "TASKS": "Pruebas regulares — Competencias 14 y 15",
+    "Vertical": "School",
+    "Brief Description": "Quizzes y versiones por grado.",
+    "Specialists": "Ailil Coutinho, Victor Colmenares",
+    "Fecha de Inicio y Fin": "Apr 20, 2026 – Apr 24, 2026",
+    "Estado": "Delayed Done",
+    "Calidad": "",
+    "Rondas de revisión": "",
+    "Comments": "",
+    "Deadline 1": "",
+    "Deadline 2": "",
+    "Deadline 3": "",
+    "Deadline 4": "",
+    "Noryley": "",
+    "Roxangel": "",
+    "Ailil": "",
+    "Asdrubal": "",
+    "Norilys": "",
+    "Victor": "",
+    "Melisa": "",
+    "AI Summary": ""
+  },
+  {
+    "ID": "seed-002",
+    [PARENT_ID_KEY]: "",
+    "Tipo de trabajo": "PERPETUAL",
+    "TASKS": "English For Teachers (EFT)",
+    "Vertical": "School",
+    "Brief Description": "Enseña inglés al equipo docente de MOA School. Cada docente recibe una sesión sincrónica semanal y, cada dos semanas, un paquete de actividades para trabajar de forma autónoma.",
+    "Specialists": "Asdrubal Marquez",
+    "Fecha de Inicio y Fin": "",
+    "Estado": "In progress",
+    "Calidad": "",
+    "Rondas de revisión": "2",
+    "Comments": "Cada unidad contiene video, audio, vocabulario, gramática, diálogo, juegos flash y proyecto.",
+    "Deadline 1": "",
+    "Deadline 2": "",
+    "Deadline 3": "",
+    "Deadline 4": "",
+    "Noryley": "",
+    "Roxangel": "",
+    "Ailil": "",
+    "Asdrubal": "Mis To-Dos · Mis fechas de entrega",
+    "Norilys": "",
+    "Victor": "",
+    "Melisa": "",
+    "AI Summary": ""
+  }
+];
 
 // ─── State ──────────────────────────────────────────────────────────────────
 let allData = [];
@@ -156,8 +189,11 @@ let filteredData = [];
 let sortKey = null;
 let sortDir = "asc";
 let activeEditor = null;
+let activeSubitemParentKey = null;
+let currentSearchQuery = "";
 let createSelectedSpecialists = new Set();
-let createSelectedVerticals = new Set(); // ← NUEVO
+let createSelectedVerticals = new Set();
+let openSubitems = loadOpenSubitems();
 
 // ─── Fetch from SheetDB ─────────────────────────────────────────────────────
 async function fetchData() {
@@ -202,14 +238,20 @@ async function fetchData() {
 function normalizeRows(rows) {
   return rows
     .map(cleanSheetRow)
+    .map(applyColumnAliases)
     .filter(row => hasVisibleRowData(row))
-    .map((row, index) => ({
-      ...makeEmptySheetRow(),
-      ...row,
-      ID: row.ID || row.id || row.Id || "",
-      __localIndex: index,
-      __originalTaskName: row["TASKS"] || ""
-    }));
+    .map((row, index) => {
+      const normalized = {
+        ...makeEmptySheetRow(),
+        ...row,
+        ID: row.ID || row.id || row.Id || "",
+        [PARENT_ID_KEY]: row[PARENT_ID_KEY] || "",
+        __localIndex: index,
+        __originalTaskName: row["TASKS"] || ""
+      };
+      normalized.__clientKey = normalized.ID || `local-${index}-${slugify(normalized["TASKS"] || "row")}`;
+      return normalized;
+    });
 }
 
 function cleanSheetRow(row) {
@@ -220,59 +262,58 @@ function cleanSheetRow(row) {
   return clean;
 }
 
+function applyColumnAliases(row) {
+  const clean = { ...row };
+  Object.entries(COLUMN_ALIASES).forEach(([canonical, aliases]) => {
+    if (String(clean[canonical] || "").trim()) return;
+    const found = aliases.find(alias => clean[alias] !== undefined && String(clean[alias] || "").trim() !== "");
+    if (found) clean[canonical] = clean[found];
+  });
+  return clean;
+}
+
 function makeEmptySheetRow() {
   const row = {};
   ALL_SHEET_KEYS.forEach(key => { row[key] = ""; });
   return row;
 }
 
-function serializeForSheet(row, mode = "full") {
-  const keys = mode === "create"
-    ? ["ID", "Tipo de trabajo", "TASKS", "Vertical", "Brief Description", "Specialists", "Deadline 1"]
-    : ALL_SHEET_KEYS;
-
+function serializeForSheet(row) {
   const clean = {};
-  keys.forEach(key => {
+  ALL_SHEET_KEYS.forEach(key => {
     const value = row[key];
-    if (value !== undefined && value !== null) {
-      clean[key] = String(value).trim();
-    }
+    clean[key] = value === undefined || value === null ? "" : String(value).trim();
   });
   return clean;
 }
 
 function hasVisibleRowData(row) {
-  return COLUMNS.some(col => {
-    return String(row[col.key] || "").trim() !== "";
-  });
+  return COLUMNS.some(col => String(row[col.key] || "").trim() !== "");
 }
 
 // ─── POST new row to SheetDB ────────────────────────────────────────────────
-async function postRow(rowData) {
+async function postRow(rowData, options = {}) {
   const cleanRow = { ...makeEmptySheetRow(), ...rowData };
+  const successMessage = options.successMessage || "Tarea guardada correctamente.";
+  const errorMessage = options.errorMessage || "No se pudo guardar. Revisa SheetDB, permisos, encabezados y la columna Parent ID.";
 
-  if (!cleanRow.ID) {
-    cleanRow.ID = createId();
-  }
+  if (!cleanRow.ID) cleanRow.ID = createId();
 
   if (!String(cleanRow["TASKS"] || "").trim()) {
     showToast("La tarea necesita un nombre antes de guardarse.", "error");
     return false;
   }
 
-  const sheetPayload = serializeForSheet(cleanRow, "create");
-
-  console.log("Sending task to SheetDB:", sheetPayload);
-
+  const sheetPayload = serializeForSheet(cleanRow);
   const localRow = normalizeRows([sheetPayload])[0];
 
   if (localRow) {
     allData.push(localRow);
-    filteredData = [...allData];
-    renderTable(filteredData);
+    applyCurrentFiltersAndRender();
   }
 
   if (SHEETDB_URL.includes("YOUR_SHEETDB_ID_HERE")) {
+    showToast(successMessage, "success");
     return true;
   }
 
@@ -286,24 +327,22 @@ async function postRow(rowData) {
     const responseText = await res.text();
     console.log("SheetDB POST response:", responseText);
 
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status}: ${responseText}`);
-    }
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${responseText}`);
 
-    showToast("Tarea guardada correctamente.", "success");
+    showToast(successMessage, "success");
     return true;
   } catch (err) {
     console.error("POST error:", err);
     allData = allData.filter(row => row.ID !== cleanRow.ID);
     filteredData = filteredData.filter(row => row.ID !== cleanRow.ID);
     renderTable(filteredData);
-    showToast("No se pudo guardar la tarea. Revisa SheetDB, permisos y encabezados.", "error");
+    showToast(errorMessage, "error");
     return false;
   }
 }
 
 // ─── PATCH one cell to SheetDB ──────────────────────────────────────────────
-async function patchCell(row, key, newValue) {
+async function patchCell(row, key, newValue, options = {}) {
   if (!row) return false;
 
   const oldValue = row[key] || "";
@@ -318,9 +357,11 @@ async function patchCell(row, key, newValue) {
   }
 
   row[key] = newValue;
-  renderTable(filteredData);
+  if (key === "ID") row.__clientKey = row.__clientKey || newValue;
+  applyCurrentFiltersAndRender();
 
   if (SHEETDB_URL.includes("YOUR_SHEETDB_ID_HERE")) {
+    if (!options.silent) showToast("Guardado", "success");
     return true;
   }
 
@@ -335,31 +376,127 @@ async function patchCell(row, key, newValue) {
     });
 
     const responseText = await res.text();
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${responseText}`);
 
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status}: ${responseText}`);
-    }
-
-    if (key === "TASKS") {
-      row.__originalTaskName = newValue;
-    }
-
-    showToast("Guardado", "success");
+    if (key === "TASKS") row.__originalTaskName = newValue;
+    if (!options.silent) showToast("Guardado", "success");
     return true;
   } catch (err) {
     console.error("PATCH error:", err);
     row[key] = oldValue;
-    renderTable(filteredData);
+    applyCurrentFiltersAndRender();
     showToast("No se pudo guardar el cambio. Revisa SheetDB y la columna ID.", "error");
     return false;
   }
 }
 
-function createId() {
-  if (window.crypto && crypto.randomUUID) {
-    return crypto.randomUUID();
+async function ensureRowId(row) {
+  if (!row) return false;
+  if (String(row.ID || "").trim()) return true;
+
+  const newId = createId();
+  const ok = await patchCell(row, "ID", newId, { silent: true });
+  if (!ok) {
+    showToast("No pude crear el sub-item porque la tarea principal no tiene ID guardado.", "error");
+    return false;
   }
+  row.ID = newId;
+  return true;
+}
+
+function createId() {
+  if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
   return `task-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+// ─── Sub-items helpers ──────────────────────────────────────────────────────
+function isSubitem(row) {
+  return Boolean(String(row && row[PARENT_ID_KEY] || "").trim());
+}
+
+function getRowByClientKey(clientKey) {
+  return allData.find(row => row.__clientKey === clientKey || row.ID === clientKey);
+}
+
+function getRowKey(row) {
+  return row.ID || row.__clientKey;
+}
+
+function getSubitemsForParent(parent) {
+  const parentId = String(parent && parent.ID || "").trim();
+  if (!parentId) return [];
+  return allData.filter(row => String(row[PARENT_ID_KEY] || "").trim() === parentId);
+}
+
+function groupSubitems(rows) {
+  const map = new Map();
+  rows.forEach(row => {
+    if (!isSubitem(row)) return;
+    const parentId = String(row[PARENT_ID_KEY] || "").trim();
+    if (!map.has(parentId)) map.set(parentId, []);
+    map.get(parentId).push(row);
+  });
+  return map;
+}
+
+function isRowExpanded(row) {
+  return openSubitems.has(row.ID) || openSubitems.has(row.__clientKey) || activeSubitemParentKey === getRowKey(row);
+}
+
+function toggleSubitems(row) {
+  const key = getRowKey(row);
+  if (!key) return;
+  if (openSubitems.has(key)) {
+    openSubitems.delete(key);
+  } else {
+    openSubitems.add(key);
+  }
+  saveOpenSubitems();
+  renderTable(filteredData);
+}
+
+async function createSubitem(parent, title) {
+  const cleanTitle = String(title || "").trim();
+  if (!cleanTitle) {
+    showToast("Escribe el nombre del sub-item.", "error");
+    return false;
+  }
+
+  const hasParentId = await ensureRowId(parent);
+  if (!hasParentId) return false;
+
+  const subitem = makeEmptySheetRow();
+  subitem.ID = createId();
+  subitem[PARENT_ID_KEY] = parent.ID;
+  subitem["TASKS"] = cleanTitle;
+  subitem["Tipo de trabajo"] = parent["Tipo de trabajo"] || "ON-DEMAND";
+  subitem["Vertical"] = parent["Vertical"] || "";
+  subitem["Specialists"] = parent["Specialists"] || "";
+  subitem["Estado"] = "Not started";
+
+  openSubitems.add(parent.ID);
+  saveOpenSubitems();
+  activeSubitemParentKey = null;
+
+  return postRow(subitem, {
+    successMessage: "Sub-item guardado correctamente.",
+    errorMessage: "No se pudo guardar el sub-item. Asegúrate de agregar la columna Parent ID en Google Sheets."
+  });
+}
+
+function loadOpenSubitems() {
+  try {
+    const raw = localStorage.getItem(OPEN_SUBITEMS_STORAGE_KEY);
+    return new Set(raw ? JSON.parse(raw) : []);
+  } catch (_) {
+    return new Set();
+  }
+}
+
+function saveOpenSubitems() {
+  try {
+    localStorage.setItem(OPEN_SUBITEMS_STORAGE_KEY, JSON.stringify(Array.from(openSubitems)));
+  } catch (_) {}
 }
 
 // ─── Render Table ───────────────────────────────────────────────────────────
@@ -381,7 +518,10 @@ function renderTable(data) {
 
   tbody.innerHTML = "";
 
-  if (data.length === 0) {
+  const subitemsByParent = groupSubitems(allData);
+  const visibleParents = data.filter(row => !isSubitem(row));
+
+  if (visibleParents.length === 0) {
     const tr = document.createElement("tr");
     const td = document.createElement("td");
     td.colSpan = COLUMNS.length;
@@ -392,41 +532,92 @@ function renderTable(data) {
     tr.appendChild(td);
     tbody.appendChild(tr);
   } else {
-    data.forEach((row, rowIndex) => {
-      const tr = document.createElement("tr");
+    visibleParents.forEach(parent => {
+      tbody.appendChild(createTableRow(parent, { isSubitem: false }));
 
-      COLUMNS.forEach(col => {
-        const td = document.createElement("td");
-        td.innerHTML = renderCell(row[col.key] || "", col.type, col.key);
-        td.dataset.rowIndex = String(rowIndex);
-        td.dataset.key = col.key;
-        td.dataset.type = col.type;
+      const children = subitemsByParent.get(parent.ID) || [];
+      const shouldShowChildren = currentSearchQuery || isRowExpanded(parent);
 
-        if (col.editable) {
-          td.classList.add("editable-cell");
-          td.title = "Click to edit";
+      if (shouldShowChildren) {
+        const visibleChildren = currentSearchQuery
+          ? children.filter(child => data.includes(child))
+          : children;
+
+        visibleChildren.forEach(child => {
+          tbody.appendChild(createTableRow(child, { isSubitem: true }));
+        });
+
+        if (!currentSearchQuery) {
+          tbody.appendChild(createSubitemCreateRow(parent));
         }
-
-        tr.appendChild(td);
-      });
-
-      tbody.appendChild(tr);
+      }
     });
   }
 
   table.style.display = "table";
 }
 
-// ─── Cell Renderers ─────────────────────────────────────────────────────────
-function renderCell(value, type) {
-  if (!value && value !== 0) {
-    return `<span class="cell-empty"></span>`;
+function createTableRow(row, meta) {
+  const tr = document.createElement("tr");
+  tr.className = meta.isSubitem ? "subitem-row" : "task-parent-row";
+  tr.dataset.rowKey = row.__clientKey;
+
+  COLUMNS.forEach(col => {
+    const td = document.createElement("td");
+    td.innerHTML = renderCell(row[col.key] || "", col.type, col.key, row, meta);
+    td.dataset.rowKey = row.__clientKey;
+    td.dataset.key = col.key;
+    td.dataset.type = col.type;
+
+    if (meta.isSubitem) td.classList.add("subitem-cell");
+    if (col.editable) {
+      td.classList.add("editable-cell");
+      td.title = "Click to edit";
+    }
+
+    tr.appendChild(td);
+  });
+
+  return tr;
+}
+
+function createSubitemCreateRow(parent) {
+  const tr = document.createElement("tr");
+  const parentKey = getRowKey(parent);
+  const isActive = activeSubitemParentKey === parentKey;
+  tr.className = `subitem-create-row ${isActive ? "subitem-create-row--active" : ""}`;
+
+  const td = document.createElement("td");
+  td.colSpan = COLUMNS.length;
+
+  if (isActive) {
+    td.innerHTML = `
+      <div class="subitem-create-box">
+        <span class="subitem-create-box__branch">↳</span>
+        <input class="subitem-create-input" type="text" placeholder="Nombre del sub-item…" autocomplete="off" />
+        <button type="button" class="subitem-create-save" data-save-subitem="${esc(parent.__clientKey)}">Save</button>
+        <button type="button" class="subitem-create-cancel" data-cancel-subitem>Cancel</button>
+      </div>
+    `;
+  } else {
+    td.innerHTML = `
+      <button type="button" class="subitem-new-button" data-start-subitem="${esc(parent.__clientKey)}">
+        <span>＋</span> New sub-item
+      </button>
+    `;
   }
 
-  switch (type) {
-    case "title":
-      return `<div class="task-title" title="${esc(value)}">${esc(value)}</div>`;
+  tr.appendChild(td);
+  return tr;
+}
 
+// ─── Cell Renderers ─────────────────────────────────────────────────────────
+function renderCell(value, type, key, row, meta = {}) {
+  if (type === "title") return renderTitleCell(value, row, meta);
+
+  if (!value && value !== 0) return `<span class="cell-empty"></span>`;
+
+  switch (type) {
     case "tipo":
       return renderTipoBadge(value);
 
@@ -464,6 +655,34 @@ function renderCell(value, type) {
   }
 }
 
+function renderTitleCell(value, row, meta) {
+  const safeTitle = esc(value || "Untitled");
+
+  if (meta.isSubitem) {
+    return `
+      <div class="task-title-wrap task-title-wrap--subitem">
+        <span class="subitem-branch">↳</span>
+        <div class="task-title task-title--subitem" title="${safeTitle}">${safeTitle}</div>
+      </div>
+    `;
+  }
+
+  const children = getSubitemsForParent(row);
+  const expanded = isRowExpanded(row);
+  const toggleLabel = expanded ? "Hide sub-items" : "Show sub-items";
+
+  return `
+    <div class="task-title-wrap">
+      <button type="button" class="subitem-toggle ${expanded ? "is-open" : ""}" data-toggle-subitems="${esc(row.__clientKey)}" aria-label="${toggleLabel}" title="${toggleLabel}">
+        ${expanded ? "▾" : "▸"}
+      </button>
+      <div class="task-title" title="${safeTitle}">${safeTitle}</div>
+      ${children.length ? `<span class="subitem-count" title="${children.length} sub-items">${children.length}</span>` : ""}
+      <button type="button" class="subitem-mini-add" data-start-subitem="${esc(row.__clientKey)}" title="Add sub-item">＋</button>
+    </div>
+  `;
+}
+
 function renderTipoBadge(val) {
   const map = {
     "PROJECT": "badge--project",
@@ -488,12 +707,7 @@ function renderVerticalBadge(val) {
 }
 
 function renderAvatarChip(name, idx) {
-  const initials = String(name)
-    .split(/\s+/)
-    .slice(0, 2)
-    .map(w => w[0] || "")
-    .join("")
-    .toUpperCase();
+  const initials = getInitials(name);
   const colorClass = `avatar-${idx % 7}`;
   return `
     <span class="avatar-chip">
@@ -550,16 +764,29 @@ function esc(str) {
     .replace(/"/g, "&quot;");
 }
 
+function slugify(value) {
+  return String(value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "") || "row";
+}
+
 // ─── Inline editing ─────────────────────────────────────────────────────────
 function initInlineEditing() {
   const tbody = document.getElementById("table-body");
 
   tbody.addEventListener("pointerdown", e => {
+    if (e.target.closest("[data-toggle-subitems], [data-start-subitem], [data-save-subitem], [data-cancel-subitem], .subitem-create-input")) return;
+
     const td = e.target.closest("td.editable-cell");
     if (!td || e.target.closest(".inline-editor")) return;
+
     e.preventDefault();
     e.stopPropagation();
-    const row = filteredData[Number(td.dataset.rowIndex)];
+
+    const row = getRowByClientKey(td.dataset.rowKey);
     if (!row) return;
     openEditor(td, row, td.dataset.key, td.dataset.type);
   });
@@ -572,10 +799,76 @@ function initInlineEditing() {
   });
 }
 
+function initSubitemInteractions() {
+  const tbody = document.getElementById("table-body");
+
+  tbody.addEventListener("click", async e => {
+    const toggle = e.target.closest("[data-toggle-subitems]");
+    if (toggle) {
+      e.preventDefault();
+      e.stopPropagation();
+      const row = getRowByClientKey(toggle.dataset.toggleSubitems);
+      if (row) toggleSubitems(row);
+      return;
+    }
+
+    const start = e.target.closest("[data-start-subitem]");
+    if (start) {
+      e.preventDefault();
+      e.stopPropagation();
+      const row = getRowByClientKey(start.dataset.startSubitem);
+      if (!row) return;
+      activeSubitemParentKey = getRowKey(row);
+      openSubitems.add(getRowKey(row));
+      saveOpenSubitems();
+      renderTable(filteredData);
+      setTimeout(() => {
+        const input = document.querySelector(".subitem-create-input");
+        if (input) input.focus();
+      }, 0);
+      return;
+    }
+
+    const save = e.target.closest("[data-save-subitem]");
+    if (save) {
+      e.preventDefault();
+      e.stopPropagation();
+      const parent = getRowByClientKey(save.dataset.saveSubitem);
+      const box = save.closest(".subitem-create-box");
+      const input = box ? box.querySelector(".subitem-create-input") : null;
+      if (parent && input) await createSubitem(parent, input.value);
+      return;
+    }
+
+    const cancel = e.target.closest("[data-cancel-subitem]");
+    if (cancel) {
+      e.preventDefault();
+      e.stopPropagation();
+      activeSubitemParentKey = null;
+      renderTable(filteredData);
+    }
+  });
+
+  tbody.addEventListener("keydown", async e => {
+    const input = e.target.closest(".subitem-create-input");
+    if (!input) return;
+
+    if (e.key === "Enter") {
+      e.preventDefault();
+      const save = input.closest(".subitem-create-box")?.querySelector("[data-save-subitem]");
+      const parent = save ? getRowByClientKey(save.dataset.saveSubitem) : null;
+      if (parent) await createSubitem(parent, input.value);
+    }
+
+    if (e.key === "Escape") {
+      activeSubitemParentKey = null;
+      renderTable(filteredData);
+    }
+  });
+}
+
 function openEditor(td, row, key, type) {
-  if (activeEditor) {
-    renderTable(filteredData);
-  }
+  if (activeEditor) renderTable(filteredData);
 
   activeEditor = { td, row, key };
   const value = row[key] || "";
@@ -722,9 +1015,7 @@ function getEditorHTML(value, type, key) {
     ["Brief Description", "Comments", "AI Summary"].includes(key) ||
     type === "specialist-note";
 
-  const tag = isLongText ? "textarea" : "input";
-
-  if (tag === "textarea") {
+  if (isLongText) {
     return `
       <div class="inline-editor inline-editor--text">
         <textarea class="inline-input" rows="4">${esc(value)}</textarea>
@@ -832,13 +1123,41 @@ function handleSort(key) {
 
 // ─── Search ─────────────────────────────────────────────────────────────────
 function handleSearch(query) {
-  const q = query.toLowerCase().trim();
-  filteredData = q
-    ? allData.filter(row =>
-        Object.values(row).some(v => String(v || "").toLowerCase().includes(q))
-      )
-    : [...allData];
+  currentSearchQuery = query.toLowerCase().trim();
+  applyCurrentFiltersAndRender();
+}
+
+function applyCurrentFiltersAndRender() {
+  const q = currentSearchQuery;
+
+  if (!q) {
+    filteredData = [...allData];
+    renderTable(filteredData);
+    return;
+  }
+
+  const matchingParentIds = new Set();
+
+  allData.forEach(row => {
+    if (!rowMatchesSearch(row, q)) return;
+    if (isSubitem(row)) {
+      matchingParentIds.add(String(row[PARENT_ID_KEY] || "").trim());
+    } else {
+      matchingParentIds.add(String(row.ID || "").trim());
+    }
+  });
+
+  filteredData = allData.filter(row => {
+    if (rowMatchesSearch(row, q)) return true;
+    if (isSubitem(row)) return matchingParentIds.has(String(row[PARENT_ID_KEY] || "").trim());
+    return matchingParentIds.has(String(row.ID || "").trim());
+  });
+
   renderTable(filteredData);
+}
+
+function rowMatchesSearch(row, q) {
+  return COLUMNS.some(col => String(row[col.key] || "").toLowerCase().includes(q));
 }
 
 // ─── Tabs ───────────────────────────────────────────────────────────────────
@@ -890,13 +1209,14 @@ function initVerticalPicker() {
   const trigger  = document.getElementById("vertical-trigger");
   const dropdown = document.getElementById("vertical-dropdown");
   const list     = document.getElementById("vertical-list");
+  const selectedBox = document.getElementById("selected-verticals");
   if (!picker || !trigger || !dropdown || !list) return;
 
   function renderOptions() {
     list.innerHTML = OPTIONS.vertical.map(v => {
       const sel = createSelectedVerticals.has(v);
-      return `<button type="button" class="people-option ${sel ? "is-selected" : ""}" data-vertical="${v}" role="option" aria-selected="${sel}">
-        <span class="people-option__name">${v}</span>
+      return `<button type="button" class="people-option ${sel ? "is-selected" : ""}" data-vertical="${esc(v)}" role="option" aria-selected="${sel}">
+        <span class="people-option__name">${esc(v)}</span>
         <span class="people-option__check">✓</span>
       </button>`;
     }).join("");
@@ -914,13 +1234,21 @@ function initVerticalPicker() {
   }
 
   function updateVerticalUI() {
-    const hidden      = document.getElementById("vertical-hidden");
+    const hidden = document.getElementById("vertical-hidden");
     const placeholder = trigger.querySelector(".people-picker__placeholder");
     const sel = Array.from(createSelectedVerticals);
     if (hidden) hidden.value = sel.join(", ");
     if (placeholder) {
       placeholder.textContent = sel.length ? sel.join(", ") : "Selecciona una o varias verticales";
       placeholder.style.color = sel.length ? "var(--moa-ink)" : "var(--text-secondary)";
+    }
+    if (selectedBox) {
+      selectedBox.innerHTML = sel.map(v => `
+        <span class="selected-person-chip selected-person-chip--vertical">
+          <span>${esc(v)}</span>
+          <button type="button" class="selected-person-chip__remove" data-remove-vertical="${esc(v)}" aria-label="Remove ${esc(v)}">×</button>
+        </span>
+      `).join("");
     }
   }
 
@@ -930,6 +1258,16 @@ function initVerticalPicker() {
     trigger.setAttribute("aria-expanded", String(isOpen));
     if (isOpen) renderOptions();
   });
+
+  if (selectedBox) {
+    selectedBox.addEventListener("click", e => {
+      const btn = e.target.closest("[data-remove-vertical]");
+      if (!btn) return;
+      createSelectedVerticals.delete(btn.dataset.removeVertical);
+      updateVerticalUI();
+      renderOptions();
+    });
+  }
 
   document.addEventListener("click", e => {
     if (!picker.contains(e.target)) {
@@ -952,7 +1290,7 @@ function initSubmitForm() {
 
   if (!form) return;
 
-  initVerticalPicker(); // ← NUEVO
+  initVerticalPicker();
 
   if (picker && trigger && dropdown && search) {
     renderCreateSpecialistOptions();
@@ -1000,19 +1338,16 @@ function initSubmitForm() {
     const row = makeEmptySheetRow();
 
     row.ID = createId();
+    row[PARENT_ID_KEY] = "";
     row["TASKS"] = String(formData.get("TASKS") || "").trim();
     row["Tipo de trabajo"] = String(formData.get("Tipo de trabajo") || "").trim();
-
-    // ← NUEVO: toma el valor del hidden de vertical (multi-select)
     row["Vertical"] = String(formData.get("Vertical") || "").trim();
-
     row["Specialists"] =
       Array.from(createSelectedSpecialists).join(", ") ||
       String(formData.get("Specialists") || "").trim();
-
     row["Brief Description"] = String(formData.get("Brief Description") || "").trim();
+    row["Estado"] = "Not started";
 
-    // ← NUEVO: deadline del formulario
     const deadlineRaw = String(formData.get("Deadline 1") || "").trim();
     row["Deadline 1"] = deadlineRaw ? formatDateForDisplay(deadlineRaw) : "";
 
@@ -1025,24 +1360,7 @@ function initSubmitForm() {
       }
 
       form.reset();
-      createSelectedSpecialists.clear();
-      closeCreateSpecialistPicker();
-      updateCreateSpecialistsUI();
-      renderCreateSpecialistOptions();
-
-      // ← NUEVO: reset del vertical picker
-      createSelectedVerticals.clear();
-      const vHidden = document.getElementById("vertical-hidden");
-      if (vHidden) vHidden.value = "";
-      const vPlaceholder = document.querySelector("#vertical-trigger .people-picker__placeholder");
-      if (vPlaceholder) {
-        vPlaceholder.textContent = "Selecciona una o varias verticales";
-        vPlaceholder.style.color = "var(--text-secondary)";
-      }
-      const vPicker = document.getElementById("vertical-picker");
-      if (vPicker) vPicker.classList.remove("is-open");
-      const vDropdown = document.getElementById("vertical-dropdown");
-      if (vDropdown) vDropdown.hidden = true;
+      resetFormPickers();
 
       document.querySelectorAll(".tab").forEach(t => t.classList.remove("tab--active"));
       const allTasksTab = document.querySelector('[data-tab="all-tasks"]');
@@ -1051,7 +1369,6 @@ function initSubmitForm() {
       document.querySelectorAll(".view").forEach(v => v.classList.remove("view--active"));
       const allTasksView = document.getElementById("view-all-tasks");
       if (allTasksView) allTasksView.classList.add("view--active");
-
     } else {
       if (feedback) {
         feedback.textContent = "No se pudo guardar. Revisa SheetDB, el URL y que los encabezados de la hoja coincidan.";
@@ -1059,6 +1376,28 @@ function initSubmitForm() {
       }
     }
   });
+}
+
+function resetFormPickers() {
+  createSelectedSpecialists.clear();
+  closeCreateSpecialistPicker();
+  updateCreateSpecialistsUI();
+  renderCreateSpecialistOptions();
+
+  createSelectedVerticals.clear();
+  const vHidden = document.getElementById("vertical-hidden");
+  if (vHidden) vHidden.value = "";
+  const vPlaceholder = document.querySelector("#vertical-trigger .people-picker__placeholder");
+  if (vPlaceholder) {
+    vPlaceholder.textContent = "Selecciona una o varias verticales";
+    vPlaceholder.style.color = "var(--text-secondary)";
+  }
+  const vSelected = document.getElementById("selected-verticals");
+  if (vSelected) vSelected.innerHTML = "";
+  const vPicker = document.getElementById("vertical-picker");
+  if (vPicker) vPicker.classList.remove("is-open");
+  const vDropdown = document.getElementById("vertical-dropdown");
+  if (vDropdown) vDropdown.hidden = true;
 }
 
 function closeCreateSpecialistPicker() {
@@ -1174,7 +1513,7 @@ function showToast(message, type = "success") {
   clearTimeout(showToast.timer);
   showToast.timer = setTimeout(() => {
     toast.classList.remove("toast--show");
-  }, 2200);
+  }, 2800);
 }
 
 // ─── Boot ───────────────────────────────────────────────────────────────────
@@ -1182,6 +1521,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initTabs();
   initToolbar();
   initInlineEditing();
+  initSubitemInteractions();
   initSubmitForm();
   fetchData();
 });

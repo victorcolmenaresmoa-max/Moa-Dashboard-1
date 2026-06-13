@@ -1575,9 +1575,9 @@ html, body {
 .notion-table td[data-type="specialist-note"] .text-truncate,
 .notion-table td[data-type="specialist-note"] .text-small {
   color: var(--text-primary) !important;
-  width: 180px !important;
-  min-width: 180px !important;
-  max-width: 180px !important;
+  width: 250px !important;
+  min-width: 250px !important;
+  max-width: 250px !important;
   white-space: normal;
   overflow-wrap: anywhere;
   word-break: break-word;
@@ -1586,6 +1586,6 @@ html, body {
 }
 
 .notion-table td[data-type="specialist-note"] {
-  min-width: 180px !important;
-  max-width: 180px !important;
-}
+width: 250px !important;
+min-width: 250px !important;
+max-width: 250px !important;

@@ -1571,3 +1571,21 @@ html, body {
     min-width: 1450px;
   }
 }
+/* Specialist note cells: darker text + shorter cell width */
+.notion-table td[data-type="specialist-note"] .text-truncate,
+.notion-table td[data-type="specialist-note"] .text-small {
+  color: var(--text-primary) !important;
+  width: 160px !important;
+  min-width: 160px !important;
+  max-width: 160px !important;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  line-height: 1.35;
+  font-size: 12px;
+}
+
+.notion-table td[data-type="specialist-note"] {
+  min-width: 160px !important;
+  max-width: 160px !important;
+}

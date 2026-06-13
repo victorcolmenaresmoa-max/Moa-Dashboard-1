@@ -22,13 +22,10 @@
     <div class="tabs-toolbar-row">
       <nav class="tabs" role="tablist">
         <button class="tab tab--active" data-tab="all-tasks" role="tab"><span class="tab__icon">⊞</span> All Tasks</button>
-        <button class="tab" data-tab="sprint" role="tab"><span class="tab__icon">⚡</span> Current Sprint</button>
-        <button class="tab" data-tab="calendar" role="tab"><span class="tab__icon">📅</span> Calendar</button>
-        <button class="tab" data-tab="timeline" role="tab"><span class="tab__icon">📊</span> Timeline</button>
-        <button class="tab" data-tab="submit" role="tab"><span class="tab__icon">📝</span> Submit a task</button>
-        <button class="tab" data-tab="weekly" role="tab"><span class="tab__icon">🗓️</span> Weekly Calendar</button>
-        <button class="tab" data-tab="my-tasks" role="tab"><span class="tab__icon">✅</span> My Tasks</button>
-        <button class="tab" data-tab="updates" role="tab"><span class="tab__icon">🕐</span> Recent Updates</button>
+        <button class="tab tab--removable" data-tab="backlog" role="tab">
+          <span class="tab__icon">📋</span> Backlog
+          <span class="tab__remove" data-remove-tab title="Remove view" aria-label="Remove view">×</span>
+        </button>
       </nav>
 
       <div class="toolbar">

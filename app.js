@@ -37,6 +37,19 @@ const OPTIONS = {
 // These are the visible columns in the table. Keep the key names equal to the
 // headers in Google Sheets. Sub-items are stored as normal rows whose "Parent ID"
 // points to the parent task's ID.
+const SPECIALIST_NOTE_COLUMNS = [
+  { key: "Victor Colmenares",     label: "Victor",              icon: "👤", type: "specialist-note", editable: true },
+  { key: "Roxangel Rodriguez",    label: "Roxangel",            icon: "👤", type: "specialist-note", editable: true },
+  { key: "Ailil Coutinho",        label: "Ailil",               icon: "👤", type: "specialist-note", editable: true },
+  { key: "Norilys Cermeño",       label: "Norilys",             icon: "👤", type: "specialist-note", editable: true },
+  { key: "Dirección Académica",   label: "Dirección Académica", icon: "👤", type: "specialist-note", editable: true },
+  { key: "Veronica Gonzales",     label: "Veronica",            icon: "👤", type: "specialist-note", editable: true },
+  { key: "Melisa Espinal",        label: "Melisa",              icon: "👤", type: "specialist-note", editable: true },
+  { key: "Noryley Suescun",       label: "Noryley",             icon: "👤", type: "specialist-note", editable: true },
+  { key: "Ninfa Vivas",           label: "Ninfa",               icon: "👤", type: "specialist-note", editable: true },
+  { key: "Asdrubal Marquez",      label: "Asdrubal",            icon: "👤", type: "specialist-note", editable: true }
+];
+
 const ALL_TASKS_COLUMNS = [
   { key: "Tipo de trabajo",       label: "Tipo",          icon: "🏷️", type: "tipo", editable: true },
   { key: "TASKS",                 label: "TASKS",         icon: "📋", type: "title", editable: true },
@@ -52,14 +65,7 @@ const ALL_TASKS_COLUMNS = [
   { key: "Deadline 2",            label: "Deadline 2",    icon: "🗓️", type: "date", editable: true },
   { key: "Deadline 3",            label: "Deadline 3",    icon: "🗓️", type: "date", editable: true },
   { key: "Deadline 4",            label: "Deadline 4",    icon: "🗓️", type: "date", editable: true },
-  { key: "Noryley",               label: "Noryley",       icon: "👤", type: "specialist-note", editable: true },
-  { key: "Roxangel",              label: "Roxangel",      icon: "👤", type: "specialist-note", editable: true },
-  { key: "Ailil",                 label: "Ailil",         icon: "👤", type: "specialist-note", editable: true },
-  { key: "Asdrubal",              label: "Asdrubal",      icon: "👤", type: "specialist-note", editable: true },
-  { key: "Norilys",               label: "Norilys",       icon: "👤", type: "specialist-note", editable: true },
-  { key: "Victor",                label: "Victor",        icon: "👤", type: "specialist-note", editable: true },
-  { key: "Melisa",                label: "Melisa",        icon: "👤", type: "specialist-note", editable: true },
-  { key: "AI Summary",            label: "AI Summary",    icon: "🤖", type: "text", editable: true }
+  ...SPECIALIST_NOTE_COLUMNS
 ];
 
 const BACKLOG_COLUMNS = [
@@ -68,7 +74,6 @@ const BACKLOG_COLUMNS = [
   { key: "Tipo de trabajo",       label: "Tipo de trabajo",   icon: "◎", type: "tipo", editable: true },
   { key: "Vertical",              label: "Vertical",          icon: "☷", type: "vertical", editable: true },
   { key: "Deadline 1",            label: "Deadline 1",        icon: "📅", type: "date", editable: true },
-  { key: "AI Summary",            label: "AI Summary",        icon: "≋", type: "text", editable: true },
   { key: "Brief Description",     label: "Brief Description", icon: "≡", type: "text", editable: true },
   { key: "Calidad",               label: "Calidad",           icon: "◎", type: "calidad", editable: true },
   { key: "Estado",                label: "Estado",            icon: "●", type: "estado", editable: true },
@@ -78,13 +83,7 @@ const BACKLOG_COLUMNS = [
   { key: "Deadline 2",            label: "Deadline 2",        icon: "📅", type: "date", editable: true },
   { key: "Deadline 3",            label: "Deadline 3",        icon: "📅", type: "date", editable: true },
   { key: "Deadline 4",            label: "Deadline 4",        icon: "📅", type: "date", editable: true },
-  { key: "Noryley",               label: "Noryley",           icon: "👤", type: "specialist-note", editable: true },
-  { key: "Roxangel",              label: "Roxangel",          icon: "👤", type: "specialist-note", editable: true },
-  { key: "Ailil",                 label: "Ailil",             icon: "👤", type: "specialist-note", editable: true },
-  { key: "Asdrubal",              label: "Asdrubal",          icon: "👤", type: "specialist-note", editable: true },
-  { key: "Norilys",               label: "Norilys",           icon: "👤", type: "specialist-note", editable: true },
-  { key: "Victor",                label: "Victor",            icon: "👤", type: "specialist-note", editable: true },
-  { key: "Melisa",                label: "Melisa",            icon: "👤", type: "specialist-note", editable: true }
+  ...SPECIALIST_NOTE_COLUMNS
 ];
 
 const COLUMNS = [];
@@ -93,17 +92,47 @@ const COLUMNS = [];
 });
 
 const COLUMN_ALIASES = {
-  "Noryley": ["Noryley Suescun"],
-  "Roxangel": ["Roxangel Rodriguez"],
-  "Ailil": ["Ailil Coutinho"],
-  "Asdrubal": ["Asdrubal Marquez"],
-  "Norilys": ["Norilys Cermeño", "Norilys Cermeno"],
-  "Victor": ["Victor Colmenares"],
-  "Melisa": ["Melisa Espinal"],
+  "Victor Colmenares": ["Victor"],
+  "Roxangel Rodriguez": ["Roxangel"],
+  "Ailil Coutinho": ["Ailil"],
+  "Norilys Cermeño": ["Norilys", "Norilys Cermeno"],
+  "Dirección Académica": ["Direccion Academica", "Dirección", "Direccion"],
+  "Veronica Gonzales": ["Veronica", "Verónica Gonzales", "Verónica"],
+  "Melisa Espinal": ["Melisa"],
+  "Noryley Suescun": ["Noryley"],
+  "Ninfa Vivas": ["Ninfa"],
+  "Asdrubal Marquez": ["Asdrubal", "Asdrúbal Marquez", "Asdrúbal"],
   [PARENT_ID_KEY]: ["ParentID", "Parent Id", "Parent id", "Subitem Parent", "Parent Task ID"]
 };
 
-const ALL_SHEET_KEYS = ["ID", PARENT_ID_KEY, ...COLUMNS.map(col => col.key)];
+const ALL_SHEET_KEYS = [
+  "ID",
+  "Tipo de trabajo",
+  "TASKS",
+  "Vertical",
+  "Brief Description",
+  "Specialists",
+  "Fecha de Inicio y Fin",
+  "Estado",
+  "Calidad",
+  "Rondas de revisión",
+  "Comments",
+  "Deadline 1",
+  "Deadline 2",
+  "Deadline 3",
+  "Deadline 4",
+  "Victor Colmenares",
+  "Roxangel Rodriguez",
+  "Ailil Coutinho",
+  "Norilys Cermeño",
+  "Dirección Académica",
+  "Veronica Gonzales",
+  "Melisa Espinal",
+  "Noryley Suescun",
+  "Ninfa Vivas",
+  "Asdrubal Marquez",
+  PARENT_ID_KEY
+];
 
 // ─── Seed data shown while SheetDB URL is not configured ────────────────────
 const SEED_DATA = [
@@ -124,14 +153,13 @@ const SEED_DATA = [
     "Deadline 2": "",
     "Deadline 3": "",
     "Deadline 4": "",
-    "Noryley": "",
-    "Roxangel": "",
-    "Ailil": "Pruebas Externas Colegios, último lote",
-    "Asdrubal": "",
-    "Norilys": "",
-    "Victor": "Mis To-Dos · Mis fechas de entrega",
-    "Melisa": "",
-    "AI Summary": ""
+    "Noryley Suescun": "",
+    "Roxangel Rodriguez": "",
+    "Ailil Coutinho": "Pruebas Externas Colegios, último lote",
+    "Asdrubal Marquez": "",
+    "Norilys Cermeño": "",
+    "Victor Colmenares": "Mis To-Dos · Mis fechas de entrega",
+    "Melisa Espinal": ""
   },
   {
     "ID": "seed-001-a",
@@ -150,14 +178,13 @@ const SEED_DATA = [
     "Deadline 2": "",
     "Deadline 3": "",
     "Deadline 4": "",
-    "Noryley": "",
-    "Roxangel": "",
-    "Ailil": "",
-    "Asdrubal": "",
-    "Norilys": "",
-    "Victor": "",
-    "Melisa": "",
-    "AI Summary": ""
+    "Noryley Suescun": "",
+    "Roxangel Rodriguez": "",
+    "Ailil Coutinho": "",
+    "Asdrubal Marquez": "",
+    "Norilys Cermeño": "",
+    "Victor Colmenares": "",
+    "Melisa Espinal": ""
   },
   {
     "ID": "seed-001-b",
@@ -176,14 +203,13 @@ const SEED_DATA = [
     "Deadline 2": "",
     "Deadline 3": "",
     "Deadline 4": "",
-    "Noryley": "",
-    "Roxangel": "",
-    "Ailil": "",
-    "Asdrubal": "",
-    "Norilys": "",
-    "Victor": "",
-    "Melisa": "",
-    "AI Summary": ""
+    "Noryley Suescun": "",
+    "Roxangel Rodriguez": "",
+    "Ailil Coutinho": "",
+    "Asdrubal Marquez": "",
+    "Norilys Cermeño": "",
+    "Victor Colmenares": "",
+    "Melisa Espinal": ""
   },
   {
     "ID": "seed-002",
@@ -202,14 +228,13 @@ const SEED_DATA = [
     "Deadline 2": "",
     "Deadline 3": "",
     "Deadline 4": "",
-    "Noryley": "",
-    "Roxangel": "",
-    "Ailil": "",
-    "Asdrubal": "Mis To-Dos · Mis fechas de entrega",
-    "Norilys": "",
-    "Victor": "",
-    "Melisa": "",
-    "AI Summary": ""
+    "Noryley Suescun": "",
+    "Roxangel Rodriguez": "",
+    "Ailil Coutinho": "",
+    "Asdrubal Marquez": "Mis To-Dos · Mis fechas de entrega",
+    "Norilys Cermeño": "",
+    "Victor Colmenares": "",
+    "Melisa Espinal": ""
   }
 ];
 
@@ -1245,7 +1270,7 @@ function getEditorHTML(value, type, key) {
   }
 
   const isLongText =
-    ["Brief Description", "Comments", "AI Summary"].includes(key) ||
+    ["Brief Description", "Comments"].includes(key) ||
     type === "specialist-note";
 
   if (isLongText) {

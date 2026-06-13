@@ -38,28 +38,28 @@ const OPTIONS = {
 // headers in Google Sheets. Sub-items are stored as normal rows whose "Parent ID"
 // points to the parent task's ID.
 const COLUMNS = [
-  { key: "Tipo de trabajo",       label: "Tipo",          icon: "🏷️", type: "tipo", editable: true },
-  { key: "TASKS",                 label: "TASKS",         icon: "📋", type: "title", editable: true },
-  { key: "Vertical",              label: "Vertical",      icon: "📂", type: "vertical", editable: true },
-  { key: "Brief Description",     label: "Descripción",   icon: "📄", type: "text", editable: true },
-  { key: "Specialists",           label: "Specialists",   icon: "👥", type: "specialists", editable: true },
-  { key: "Fecha de Inicio y Fin", label: "Fechas",        icon: "📅", type: "daterange", editable: true },
-  { key: "Estado",                label: "Estado",        icon: "🔵", type: "estado", editable: true },
-  { key: "Calidad",               label: "Calidad",       icon: "⭐", type: "calidad", editable: true },
-  { key: "Rondas de revisión",    label: "Rondas",        icon: "🔄", type: "rounds", editable: true },
-  { key: "Comments",              label: "Comments",      icon: "💬", type: "text", editable: true },
-  { key: "Deadline 1",            label: "Deadline 1",    icon: "🗓️", type: "date", editable: true },
-  { key: "Deadline 2",            label: "Deadline 2",    icon: "🗓️", type: "date", editable: true },
-  { key: "Deadline 3",            label: "Deadline 3",    icon: "🗓️", type: "date", editable: true },
-  { key: "Deadline 4",            label: "Deadline 4",    icon: "🗓️", type: "date", editable: true },
-  { key: "Noryley",               label: "Noryley",       icon: "👤", type: "specialist-note", editable: true },
-  { key: "Roxangel",              label: "Roxangel",      icon: "👤", type: "specialist-note", editable: true },
-  { key: "Ailil",                 label: "Ailil",         icon: "👤", type: "specialist-note", editable: true },
-  { key: "Asdrubal",              label: "Asdrubal",      icon: "👤", type: "specialist-note", editable: true },
-  { key: "Norilys",               label: "Norilys",       icon: "👤", type: "specialist-note", editable: true },
-  { key: "Victor",                label: "Victor",        icon: "👤", type: "specialist-note", editable: true },
-  { key: "Melisa",                label: "Melisa",        icon: "👤", type: "specialist-note", editable: true },
-  { key: "AI Summary",            label: "AI Summary",    icon: "🤖", type: "text", editable: true }
+  { key: "TASKS",                 label: "TASKS",             icon: "Aa", type: "title", editable: true },
+  { key: "Specialists",           label: "Specialists",       icon: "👥", type: "specialists", editable: true },
+  { key: "Tipo de trabajo",       label: "Tipo de trabajo",   icon: "◎", type: "tipo", editable: true },
+  { key: "Vertical",              label: "Vertical",          icon: "☷", type: "vertical", editable: true },
+  { key: "Deadline 1",            label: "Deadline 1",        icon: "📅", type: "date", editable: true },
+  { key: "AI Summary",            label: "AI Summary",        icon: "≋", type: "text", editable: true },
+  { key: "Brief Description",     label: "Brief Description", icon: "≡", type: "text", editable: true },
+  { key: "Calidad",               label: "Calidad",           icon: "◎", type: "calidad", editable: true },
+  { key: "Estado",                label: "Estado",            icon: "●", type: "estado", editable: true },
+  { key: "Fecha de Inicio y Fin", label: "Fechas",            icon: "📅", type: "daterange", editable: true },
+  { key: "Rondas de revisión",    label: "Rondas",            icon: "↻", type: "rounds", editable: true },
+  { key: "Comments",              label: "Comments",          icon: "☰", type: "text", editable: true },
+  { key: "Deadline 2",            label: "Deadline 2",        icon: "📅", type: "date", editable: true },
+  { key: "Deadline 3",            label: "Deadline 3",        icon: "📅", type: "date", editable: true },
+  { key: "Deadline 4",            label: "Deadline 4",        icon: "📅", type: "date", editable: true },
+  { key: "Noryley",               label: "Noryley",           icon: "👤", type: "specialist-note", editable: true },
+  { key: "Roxangel",              label: "Roxangel",          icon: "👤", type: "specialist-note", editable: true },
+  { key: "Ailil",                 label: "Ailil",             icon: "👤", type: "specialist-note", editable: true },
+  { key: "Asdrubal",              label: "Asdrubal",          icon: "👤", type: "specialist-note", editable: true },
+  { key: "Norilys",               label: "Norilys",           icon: "👤", type: "specialist-note", editable: true },
+  { key: "Victor",                label: "Victor",            icon: "👤", type: "specialist-note", editable: true },
+  { key: "Melisa",                label: "Melisa",            icon: "👤", type: "specialist-note", editable: true }
 ];
 
 const COLUMN_ALIASES = {
@@ -194,6 +194,7 @@ let currentSearchQuery = "";
 let createSelectedSpecialists = new Set();
 let createSelectedVerticals = new Set();
 let openSubitems = loadOpenSubitems();
+let selectedRowKeys = new Set();
 
 // ─── Fetch from SheetDB ─────────────────────────────────────────────────────
 async function fetchData() {
@@ -499,6 +500,144 @@ function saveOpenSubitems() {
   } catch (_) {}
 }
 
+// ─── Row selection + Notion-like trash action ───────────────────────────────
+function syncSelectedRowsWithData() {
+  const existingKeys = new Set(allData.map(row => getRowKey(row)));
+  selectedRowKeys = new Set(Array.from(selectedRowKeys).filter(key => existingKeys.has(key)));
+}
+
+function getSelectedRows() {
+  return allData.filter(row => selectedRowKeys.has(getRowKey(row)));
+}
+
+function updateSelectionToolbar() {
+  const bar = document.getElementById("selection-toolbar");
+  const countEl = document.getElementById("selected-count");
+  if (!bar || !countEl) return;
+
+  const count = getSelectedRows().length;
+  countEl.textContent = `${count} selected`;
+  bar.hidden = count === 0;
+}
+
+function toggleRowSelection(row) {
+  const key = getRowKey(row);
+  if (!key) return;
+
+  if (selectedRowKeys.has(key)) {
+    selectedRowKeys.delete(key);
+  } else {
+    selectedRowKeys.add(key);
+  }
+
+  if (activeEditor) activeEditor = null;
+  renderTable(filteredData);
+}
+
+function getRowsToDeleteFromSelection() {
+  const map = new Map();
+
+  getSelectedRows().forEach(row => {
+    const rowKey = getRowKey(row);
+    map.set(rowKey, row);
+
+    if (!isSubitem(row)) {
+      getSubitemsForParent(row).forEach(child => {
+        map.set(getRowKey(child), child);
+      });
+    }
+  });
+
+  return Array.from(map.values());
+}
+
+async function deleteSelectedRows() {
+  const selectedRows = getSelectedRows();
+  const rowsToDelete = getRowsToDeleteFromSelection();
+
+  if (!rowsToDelete.length) return;
+
+  const extraChildren = rowsToDelete.length - selectedRows.length;
+  const message = extraChildren > 0
+    ? `¿Mover ${selectedRows.length} tarea(s) y ${extraChildren} sub-item(s) a la papelera?`
+    : `¿Mover ${rowsToDelete.length} tarea(s) a la papelera?`;
+
+  if (!window.confirm(message)) return;
+
+  const previousData = [...allData];
+  const deleteKeys = new Set(rowsToDelete.map(row => getRowKey(row)));
+
+  allData = allData.filter(row => !deleteKeys.has(getRowKey(row)));
+  filteredData = filteredData.filter(row => !deleteKeys.has(getRowKey(row)));
+  selectedRowKeys.clear();
+  activeEditor = null;
+  activeSubitemParentKey = null;
+  applyCurrentFiltersAndRender();
+
+  if (SHEETDB_URL.includes("YOUR_SHEETDB_ID_HERE")) {
+    showToast("Tarea movida a la papelera.", "success");
+    return;
+  }
+
+  try {
+    for (const row of rowsToDelete) {
+      await deleteRowFromSheet(row);
+    }
+    showToast(rowsToDelete.length === 1 ? "Tarea movida a la papelera." : "Tareas movidas a la papelera.", "success");
+  } catch (err) {
+    console.error("DELETE error:", err);
+    allData = previousData;
+    selectedRowKeys.clear();
+    applyCurrentFiltersAndRender();
+    showToast("No se pudo borrar. Revisa SheetDB, permisos y la columna ID.", "error");
+  }
+}
+
+async function deleteRowFromSheet(row) {
+  const idValue = String(row.ID || "").trim();
+  const taskName = String(row["TASKS"] || row.__originalTaskName || "").trim();
+  const matchColumn = idValue ? "ID" : "TASKS";
+  const matchValue = idValue || taskName;
+
+  if (!matchValue) return;
+
+  const res = await fetch(`${SHEETDB_URL}/${encodeURIComponent(matchColumn)}/${encodeURIComponent(matchValue)}`, {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" }
+  });
+
+  const responseText = await res.text();
+  console.log("SheetDB DELETE response:", responseText);
+
+  if (!res.ok) throw new Error(`HTTP ${res.status}: ${responseText}`);
+}
+
+function initSelectionInteractions() {
+  const tbody = document.getElementById("table-body");
+  const deleteButton = document.getElementById("btn-delete-selected");
+
+  if (tbody) {
+    tbody.addEventListener("click", e => {
+      const selector = e.target.closest("[data-row-select]");
+      if (!selector) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+
+      const row = getRowByClientKey(selector.dataset.rowSelect);
+      if (row) toggleRowSelection(row);
+    });
+  }
+
+  if (deleteButton) {
+    deleteButton.addEventListener("click", async e => {
+      e.preventDefault();
+      e.stopPropagation();
+      await deleteSelectedRows();
+    });
+  }
+}
+
 // ─── Render Table ───────────────────────────────────────────────────────────
 function renderTable(data) {
   const table = document.getElementById("main-table");
@@ -506,6 +645,11 @@ function renderTable(data) {
   const tbody = document.getElementById("table-body");
 
   thead.innerHTML = "";
+
+  const selectorTh = document.createElement("th");
+  selectorTh.className = "row-selector-head";
+  selectorTh.innerHTML = `<span class="row-selector-head__dot" aria-hidden="true"></span>`;
+  thead.appendChild(selectorTh);
 
   COLUMNS.forEach(col => {
     const th = document.createElement("th");
@@ -524,7 +668,7 @@ function renderTable(data) {
   if (visibleParents.length === 0) {
     const tr = document.createElement("tr");
     const td = document.createElement("td");
-    td.colSpan = COLUMNS.length;
+    td.colSpan = COLUMNS.length + 1;
     td.style.textAlign = "center";
     td.style.padding = "40px";
     td.style.color = "#787774";
@@ -555,12 +699,32 @@ function renderTable(data) {
   }
 
   table.style.display = "table";
+  syncSelectedRowsWithData();
+  updateSelectionToolbar();
 }
 
 function createTableRow(row, meta) {
   const tr = document.createElement("tr");
-  tr.className = meta.isSubitem ? "subitem-row" : "task-parent-row";
+  const rowKey = getRowKey(row);
+  const selected = selectedRowKeys.has(rowKey);
+
+  tr.className = `${meta.isSubitem ? "subitem-row" : "task-parent-row"} ${selected ? "selected-row" : ""}`.trim();
   tr.dataset.rowKey = row.__clientKey;
+
+  const selectorTd = document.createElement("td");
+  selectorTd.className = `row-selector-cell ${meta.isSubitem ? "row-selector-cell--subitem" : ""}`.trim();
+  selectorTd.innerHTML = `
+    <button
+      type="button"
+      class="row-selector ${selected ? "is-selected" : ""}"
+      data-row-select="${esc(row.__clientKey)}"
+      aria-label="${selected ? "Unselect" : "Select"} ${esc(row["TASKS"] || "task")}" 
+      title="Select row"
+    >
+      <span>${selected ? "✓" : ""}</span>
+    </button>
+  `;
+  tr.appendChild(selectorTd);
 
   COLUMNS.forEach(col => {
     const td = document.createElement("td");
@@ -588,7 +752,7 @@ function createSubitemCreateRow(parent) {
   tr.className = `subitem-create-row ${isActive ? "subitem-create-row--active" : ""}`;
 
   const td = document.createElement("td");
-  td.colSpan = COLUMNS.length;
+  td.colSpan = COLUMNS.length + 1;
 
   if (isActive) {
     td.innerHTML = `
@@ -778,7 +942,7 @@ function initInlineEditing() {
   const tbody = document.getElementById("table-body");
 
   tbody.addEventListener("pointerdown", e => {
-    if (e.target.closest("[data-toggle-subitems], [data-start-subitem], [data-save-subitem], [data-cancel-subitem], .subitem-create-input")) return;
+    if (e.target.closest("[data-row-select], [data-toggle-subitems], [data-start-subitem], [data-save-subitem], [data-cancel-subitem], .subitem-create-input")) return;
 
     const td = e.target.closest("td.editable-cell");
     if (!td || e.target.closest(".inline-editor")) return;
@@ -1164,34 +1328,13 @@ function rowMatchesSearch(row, q) {
 function initTabs() {
   const tabs = document.querySelectorAll(".tab");
   tabs.forEach(tab => {
-    tab.addEventListener("click", e => {
-      if (e.target.closest("[data-remove-tab]")) return;
-
+    tab.addEventListener("click", () => {
       tabs.forEach(t => t.classList.remove("tab--active"));
       tab.classList.add("tab--active");
-
-      let viewId = "view-" + tab.dataset.tab;
-      if (!document.getElementById(viewId)) viewId = "view-all-tasks";
-
+      const viewId = "view-" + tab.dataset.tab;
       document.querySelectorAll(".view").forEach(v => v.classList.remove("view--active"));
       const view = document.getElementById(viewId);
       if (view) view.classList.add("view--active");
-    });
-  });
-
-  document.querySelectorAll("[data-remove-tab]").forEach(removeBtn => {
-    removeBtn.addEventListener("click", e => {
-      e.stopPropagation();
-      const tab = removeBtn.closest(".tab");
-      if (!tab) return;
-
-      const wasActive = tab.classList.contains("tab--active");
-      tab.remove();
-
-      if (wasActive) {
-        const fallback = document.querySelector(".tab");
-        if (fallback) fallback.click();
-      }
     });
   });
 }
@@ -1384,12 +1527,12 @@ function initSubmitForm() {
       resetFormPickers();
 
       document.querySelectorAll(".tab").forEach(t => t.classList.remove("tab--active"));
-      const allTasksTab = document.querySelector('[data-tab="all-tasks"]');
-      if (allTasksTab) allTasksTab.classList.add("tab--active");
+      const backlogTab = document.querySelector('[data-tab="backlog"]');
+      if (backlogTab) backlogTab.classList.add("tab--active");
 
       document.querySelectorAll(".view").forEach(v => v.classList.remove("view--active"));
-      const allTasksView = document.getElementById("view-all-tasks");
-      if (allTasksView) allTasksView.classList.add("view--active");
+      const backlogView = document.getElementById("view-backlog");
+      if (backlogView) backlogView.classList.add("view--active");
     } else {
       if (feedback) {
         feedback.textContent = "No se pudo guardar. Revisa SheetDB, el URL y que los encabezados de la hoja coincidan.";
@@ -1543,6 +1686,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initToolbar();
   initInlineEditing();
   initSubitemInteractions();
+  initSelectionInteractions();
   initSubmitForm();
   fetchData();
 });

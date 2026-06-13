@@ -37,7 +37,32 @@ const OPTIONS = {
 // These are the visible columns in the table. Keep the key names equal to the
 // headers in Google Sheets. Sub-items are stored as normal rows whose "Parent ID"
 // points to the parent task's ID.
-const COLUMNS = [
+const ALL_TASKS_COLUMNS = [
+  { key: "Tipo de trabajo",       label: "Tipo",          icon: "🏷️", type: "tipo", editable: true },
+  { key: "TASKS",                 label: "TASKS",         icon: "📋", type: "title", editable: true },
+  { key: "Vertical",              label: "Vertical",      icon: "📂", type: "vertical", editable: true },
+  { key: "Brief Description",     label: "Descripción",   icon: "📄", type: "text", editable: true },
+  { key: "Specialists",           label: "Specialists",   icon: "👥", type: "specialists", editable: true },
+  { key: "Fecha de Inicio y Fin", label: "Fechas",        icon: "📅", type: "daterange", editable: true },
+  { key: "Estado",                label: "Estado",        icon: "🔵", type: "estado", editable: true },
+  { key: "Calidad",               label: "Calidad",       icon: "⭐", type: "calidad", editable: true },
+  { key: "Rondas de revisión",    label: "Rondas",        icon: "🔄", type: "rounds", editable: true },
+  { key: "Comments",              label: "Comments",      icon: "💬", type: "text", editable: true },
+  { key: "Deadline 1",            label: "Deadline 1",    icon: "🗓️", type: "date", editable: true },
+  { key: "Deadline 2",            label: "Deadline 2",    icon: "🗓️", type: "date", editable: true },
+  { key: "Deadline 3",            label: "Deadline 3",    icon: "🗓️", type: "date", editable: true },
+  { key: "Deadline 4",            label: "Deadline 4",    icon: "🗓️", type: "date", editable: true },
+  { key: "Noryley",               label: "Noryley",       icon: "👤", type: "specialist-note", editable: true },
+  { key: "Roxangel",              label: "Roxangel",      icon: "👤", type: "specialist-note", editable: true },
+  { key: "Ailil",                 label: "Ailil",         icon: "👤", type: "specialist-note", editable: true },
+  { key: "Asdrubal",              label: "Asdrubal",      icon: "👤", type: "specialist-note", editable: true },
+  { key: "Norilys",               label: "Norilys",       icon: "👤", type: "specialist-note", editable: true },
+  { key: "Victor",                label: "Victor",        icon: "👤", type: "specialist-note", editable: true },
+  { key: "Melisa",                label: "Melisa",        icon: "👤", type: "specialist-note", editable: true },
+  { key: "AI Summary",            label: "AI Summary",    icon: "🤖", type: "text", editable: true }
+];
+
+const BACKLOG_COLUMNS = [
   { key: "TASKS",                 label: "TASKS",             icon: "Aa", type: "title", editable: true },
   { key: "Specialists",           label: "Specialists",       icon: "👥", type: "specialists", editable: true },
   { key: "Tipo de trabajo",       label: "Tipo de trabajo",   icon: "◎", type: "tipo", editable: true },
@@ -61,6 +86,11 @@ const COLUMNS = [
   { key: "Victor",                label: "Victor",            icon: "👤", type: "specialist-note", editable: true },
   { key: "Melisa",                label: "Melisa",            icon: "👤", type: "specialist-note", editable: true }
 ];
+
+const COLUMNS = [];
+[...ALL_TASKS_COLUMNS, ...BACKLOG_COLUMNS].forEach(col => {
+  if (!COLUMNS.some(existing => existing.key === col.key)) COLUMNS.push(col);
+});
 
 const COLUMN_ALIASES = {
   "Noryley": ["Noryley Suescun"],
@@ -195,6 +225,7 @@ let createSelectedSpecialists = new Set();
 let createSelectedVerticals = new Set();
 let openSubitems = loadOpenSubitems();
 let selectedRowKeys = new Set();
+let activeDashboardView = "all-tasks";
 
 // ─── Fetch from SheetDB ─────────────────────────────────────────────────────
 async function fetchData() {
@@ -500,6 +531,27 @@ function saveOpenSubitems() {
   } catch (_) {}
 }
 
+function isBacklogView() {
+  return activeDashboardView === "backlog";
+}
+
+function getVisibleColumns() {
+  return isBacklogView() ? BACKLOG_COLUMNS : ALL_TASKS_COLUMNS;
+}
+
+function updateTableModeClasses() {
+  const table = document.getElementById("main-table");
+  const wrapper = document.querySelector("#view-all-tasks .table-wrapper");
+  if (table) {
+    table.classList.toggle("notion-table--backlog", isBacklogView());
+    table.classList.toggle("notion-table--all-tasks", !isBacklogView());
+  }
+  if (wrapper) {
+    wrapper.classList.toggle("table-wrapper--backlog", isBacklogView());
+    wrapper.classList.toggle("table-wrapper--all-tasks", !isBacklogView());
+  }
+}
+
 // ─── Row selection + Notion-like trash action ───────────────────────────────
 function syncSelectedRowsWithData() {
   const existingKeys = new Set(allData.map(row => getRowKey(row)));
@@ -514,6 +566,11 @@ function updateSelectionToolbar() {
   const bar = document.getElementById("selection-toolbar");
   const countEl = document.getElementById("selected-count");
   if (!bar || !countEl) return;
+
+  if (!isBacklogView()) {
+    bar.hidden = true;
+    return;
+  }
 
   const count = getSelectedRows().length;
   countEl.textContent = `${count} selected`;
@@ -643,15 +700,22 @@ function renderTable(data) {
   const table = document.getElementById("main-table");
   const thead = document.getElementById("table-head-row");
   const tbody = document.getElementById("table-body");
+  const visibleColumns = getVisibleColumns();
+  const showSelector = isBacklogView();
 
+  if (!table || !thead || !tbody) return;
+
+  updateTableModeClasses();
   thead.innerHTML = "";
 
-  const selectorTh = document.createElement("th");
-  selectorTh.className = "row-selector-head";
-  selectorTh.innerHTML = `<span class="row-selector-head__dot" aria-hidden="true"></span>`;
-  thead.appendChild(selectorTh);
+  if (showSelector) {
+    const selectorTh = document.createElement("th");
+    selectorTh.className = "row-selector-head";
+    selectorTh.innerHTML = `<span class="row-selector-head__dot" aria-hidden="true"></span>`;
+    thead.appendChild(selectorTh);
+  }
 
-  COLUMNS.forEach(col => {
+  visibleColumns.forEach(col => {
     const th = document.createElement("th");
     th.innerHTML = `<div class="th-inner"><span class="th-icon">${col.icon}</span>${col.label}</div>`;
     th.dataset.key = col.key;
@@ -664,11 +728,12 @@ function renderTable(data) {
 
   const subitemsByParent = groupSubitems(allData);
   const visibleParents = data.filter(row => !isSubitem(row));
+  const colSpan = visibleColumns.length + (showSelector ? 1 : 0);
 
   if (visibleParents.length === 0) {
     const tr = document.createElement("tr");
     const td = document.createElement("td");
-    td.colSpan = COLUMNS.length + 1;
+    td.colSpan = colSpan;
     td.style.textAlign = "center";
     td.style.padding = "40px";
     td.style.color = "#787774";
@@ -707,26 +772,30 @@ function createTableRow(row, meta) {
   const tr = document.createElement("tr");
   const rowKey = getRowKey(row);
   const selected = selectedRowKeys.has(rowKey);
+  const showSelector = isBacklogView();
+  const visibleColumns = getVisibleColumns();
 
-  tr.className = `${meta.isSubitem ? "subitem-row" : "task-parent-row"} ${selected ? "selected-row" : ""}`.trim();
+  tr.className = `${meta.isSubitem ? "subitem-row" : "task-parent-row"} ${selected && showSelector ? "selected-row" : ""}`.trim();
   tr.dataset.rowKey = row.__clientKey;
 
-  const selectorTd = document.createElement("td");
-  selectorTd.className = `row-selector-cell ${meta.isSubitem ? "row-selector-cell--subitem" : ""}`.trim();
-  selectorTd.innerHTML = `
-    <button
-      type="button"
-      class="row-selector ${selected ? "is-selected" : ""}"
-      data-row-select="${esc(row.__clientKey)}"
-      aria-label="${selected ? "Unselect" : "Select"} ${esc(row["TASKS"] || "task")}" 
-      title="Select row"
-    >
-      <span>${selected ? "✓" : ""}</span>
-    </button>
-  `;
-  tr.appendChild(selectorTd);
+  if (showSelector) {
+    const selectorTd = document.createElement("td");
+    selectorTd.className = `row-selector-cell ${meta.isSubitem ? "row-selector-cell--subitem" : ""}`.trim();
+    selectorTd.innerHTML = `
+      <button
+        type="button"
+        class="row-selector ${selected ? "is-selected" : ""}"
+        data-row-select="${esc(row.__clientKey)}"
+        aria-label="${selected ? "Unselect" : "Select"} ${esc(row["TASKS"] || "task")}" 
+        title="Move to Trash"
+      >
+        <span>${selected ? "✓" : ""}</span>
+      </button>
+    `;
+    tr.appendChild(selectorTd);
+  }
 
-  COLUMNS.forEach(col => {
+  visibleColumns.forEach(col => {
     const td = document.createElement("td");
     td.innerHTML = renderCell(row[col.key] || "", col.type, col.key, row, meta);
     td.dataset.rowKey = row.__clientKey;
@@ -752,7 +821,7 @@ function createSubitemCreateRow(parent) {
   tr.className = `subitem-create-row ${isActive ? "subitem-create-row--active" : ""}`;
 
   const td = document.createElement("td");
-  td.colSpan = COLUMNS.length + 1;
+  td.colSpan = getVisibleColumns().length + (isBacklogView() ? 1 : 0);
 
   if (isActive) {
     td.innerHTML = `
@@ -1325,17 +1394,35 @@ function rowMatchesSearch(row, q) {
 }
 
 // ─── Tabs ───────────────────────────────────────────────────────────────────
+function setActiveTab(tabName) {
+  const targetTab = tabName || "all-tasks";
+
+  document.querySelectorAll(".tab").forEach(tab => {
+    const isActive = tab.dataset.tab === targetTab;
+    tab.classList.toggle("tab--active", isActive);
+    tab.setAttribute("aria-selected", String(isActive));
+  });
+
+  document.querySelectorAll(".view").forEach(view => view.classList.remove("view--active"));
+
+  if (targetTab === "submit") {
+    activeDashboardView = "submit";
+    const submitView = document.getElementById("view-submit");
+    if (submitView) submitView.classList.add("view--active");
+    updateSelectionToolbar();
+    return;
+  }
+
+  activeDashboardView = targetTab === "backlog" ? "backlog" : "all-tasks";
+  const tableView = document.getElementById("view-all-tasks");
+  if (tableView) tableView.classList.add("view--active");
+  applyCurrentFiltersAndRender();
+}
+
 function initTabs() {
   const tabs = document.querySelectorAll(".tab");
   tabs.forEach(tab => {
-    tab.addEventListener("click", () => {
-      tabs.forEach(t => t.classList.remove("tab--active"));
-      tab.classList.add("tab--active");
-      const viewId = "view-" + tab.dataset.tab;
-      document.querySelectorAll(".view").forEach(v => v.classList.remove("view--active"));
-      const view = document.getElementById(viewId);
-      if (view) view.classList.add("view--active");
-    });
+    tab.addEventListener("click", () => setActiveTab(tab.dataset.tab));
   });
 }
 
@@ -1356,14 +1443,7 @@ function initToolbar() {
   }
 
   if (newBtn) {
-    newBtn.addEventListener("click", () => {
-      document.querySelectorAll(".tab").forEach(t => t.classList.remove("tab--active"));
-      const submitTab = document.querySelector('[data-tab="submit"]');
-      if (submitTab) submitTab.classList.add("tab--active");
-      document.querySelectorAll(".view").forEach(v => v.classList.remove("view--active"));
-      const submitView = document.getElementById("view-submit");
-      if (submitView) submitView.classList.add("view--active");
-    });
+    newBtn.addEventListener("click", () => setActiveTab("submit"));
   }
 }
 
@@ -1526,13 +1606,7 @@ function initSubmitForm() {
       form.reset();
       resetFormPickers();
 
-      document.querySelectorAll(".tab").forEach(t => t.classList.remove("tab--active"));
-      const backlogTab = document.querySelector('[data-tab="backlog"]');
-      if (backlogTab) backlogTab.classList.add("tab--active");
-
-      document.querySelectorAll(".view").forEach(v => v.classList.remove("view--active"));
-      const backlogView = document.getElementById("view-backlog");
-      if (backlogView) backlogView.classList.add("view--active");
+      setActiveTab("all-tasks");
     } else {
       if (feedback) {
         feedback.textContent = "No se pudo guardar. Revisa SheetDB, el URL y que los encabezados de la hoja coincidan.";

@@ -82,32 +82,6 @@ html, body {
 .tab--active { color: var(--text-primary); font-weight: 500; border-bottom-color: var(--text-primary); }
 .tab__icon { font-size: 13px; }
 
-.tab--removable { padding-right: 6px; }
-.tab__remove {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
-  margin-left: 2px;
-  border-radius: 4px;
-  font-size: 13px;
-  line-height: 1;
-  color: var(--text-secondary);
-  opacity: 0;
-  transform: scale(0.9);
-  transition: opacity 0.12s, transform 0.12s, background 0.12s, color 0.12s;
-}
-.tab--removable:hover .tab__remove,
-.tab__remove:focus-visible {
-  opacity: 1;
-  transform: scale(1);
-}
-.tab__remove:hover {
-  background: rgba(235, 87, 87, 0.14);
-  color: #eb5757;
-}
-
 .toolbar { display: flex; align-items: center; gap: 4px; padding-bottom: 6px; flex-shrink: 0; }
 .toolbar__btn {
   display: flex; align-items: center; gap: 5px;
@@ -1356,4 +1330,248 @@ html, body {
     flex-wrap: wrap;
   }
   .subitem-create-input { flex-basis: 100%; }
+}
+
+/* =========================================================
+   Backlog-only navigation + Notion-like selection/trash
+========================================================= */
+.tabs {
+  flex: 0 1 auto;
+}
+
+.tabs-toolbar-row {
+  align-items: center;
+}
+
+.selection-toolbar {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 30px;
+  margin-right: 8px;
+  padding: 2px 5px 2px 9px;
+  border: 1px solid rgba(10, 111, 120, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 8px 24px rgba(7, 90, 98, 0.08);
+}
+
+.selection-toolbar[hidden] {
+  display: none !important;
+}
+
+.selection-toolbar__count {
+  color: var(--moa-ink);
+  font-size: 12px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.toolbar__btn--danger {
+  color: #b42318;
+}
+
+.toolbar__btn--danger:hover {
+  background: #fff1f0;
+  border-color: rgba(180, 35, 24, 0.18);
+  color: #b42318;
+}
+
+.table-wrapper--backlog {
+  border-radius: 0 0 18px 18px;
+}
+
+.notion-table--backlog {
+  min-width: 1720px;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.notion-table--backlog thead th {
+  height: 34px;
+  border-right: 1px solid rgba(10, 111, 120, 0.07);
+}
+
+.notion-table--backlog tbody td {
+  height: 46px;
+  border-right: 1px solid rgba(10, 111, 120, 0.055);
+}
+
+.notion-table--backlog thead th:first-child,
+.notion-table--backlog tbody td:first-child {
+  width: 44px;
+  min-width: 44px;
+  max-width: 44px;
+  padding: 0 8px;
+  position: sticky;
+  left: 0;
+  z-index: 5;
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.notion-table--backlog thead th:nth-child(2),
+.notion-table--backlog tbody td:nth-child(2) {
+  position: sticky;
+  left: 44px;
+  z-index: 4;
+  min-width: 282px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 1px 0 0 rgba(10, 111, 120, 0.07);
+}
+
+.notion-table--backlog thead th:nth-child(2) {
+  z-index: 6;
+}
+
+.notion-table--backlog tbody tr:hover td:first-child,
+.notion-table--backlog tbody tr:hover td:nth-child(2),
+.notion-table--backlog tbody tr.selected-row td:first-child,
+.notion-table--backlog tbody tr.selected-row td:nth-child(2) {
+  background: rgba(230, 247, 248, 0.92);
+}
+
+.row-selector-head {
+  cursor: default !important;
+}
+
+.row-selector-head__dot {
+  width: 16px;
+  height: 16px;
+  display: block;
+  border-radius: 4px;
+}
+
+.row-selector-cell {
+  text-align: center;
+}
+
+.row-selector {
+  width: 20px;
+  height: 20px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+  line-height: 1;
+  transition: background .12s, border-color .12s, color .12s, box-shadow .12s;
+}
+
+.row-selector span {
+  transform: translateY(-0.5px);
+}
+
+.task-parent-row:hover .row-selector,
+.subitem-row:hover .row-selector {
+  border-color: rgba(120, 119, 116, 0.42);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.row-selector:hover {
+  border-color: var(--moa-deep) !important;
+  box-shadow: 0 0 0 3px rgba(33, 169, 179, 0.10);
+}
+
+.row-selector.is-selected {
+  border-color: var(--moa-deep);
+  background: var(--moa-deep);
+  color: #ffffff;
+}
+
+.selected-row {
+  background: rgba(230, 247, 248, 0.78) !important;
+}
+
+.selected-row td {
+  border-bottom-color: rgba(10, 111, 120, 0.12) !important;
+}
+
+.row-selector-cell--subitem .row-selector {
+  margin-left: 8px;
+}
+
+.notion-table--backlog .task-title-wrap {
+  min-width: 246px;
+  max-width: 280px;
+}
+
+.notion-table--backlog .task-title {
+  max-width: 216px;
+  min-width: 150px;
+}
+
+.notion-table--backlog .task-title--subitem {
+  max-width: 200px;
+}
+
+.notion-table--backlog .specialists-col {
+  min-width: 220px;
+  max-width: 260px;
+}
+
+.notion-table--backlog td[data-key="Tipo de trabajo"] {
+  min-width: 155px;
+}
+
+.notion-table--backlog td[data-key="Vertical"] {
+  min-width: 145px;
+}
+
+.notion-table--backlog td[data-key="Deadline 1"],
+.notion-table--backlog td[data-key="Deadline 2"],
+.notion-table--backlog td[data-key="Deadline 3"],
+.notion-table--backlog td[data-key="Deadline 4"] {
+  min-width: 140px;
+}
+
+.notion-table--backlog td[data-key="AI Summary"] .text-truncate {
+  width: 230px;
+  min-width: 230px;
+}
+
+.notion-table--backlog td[data-key="Brief Description"] .text-truncate {
+  width: 380px;
+  min-width: 380px;
+}
+
+.notion-table--backlog td[data-key="Comments"] .text-truncate {
+  width: 300px;
+  min-width: 300px;
+}
+
+.notion-table--backlog td[data-type="specialist-note"] .text-truncate {
+  width: 190px;
+  min-width: 190px;
+}
+
+.notion-table--backlog td[data-key="Calidad"] {
+  min-width: 180px;
+}
+
+.notion-table--backlog td[data-key="Estado"] {
+  min-width: 150px;
+}
+
+.subitem-create-row td:first-child {
+  position: static !important;
+  left: auto !important;
+  width: auto !important;
+  max-width: none !important;
+}
+
+@media (max-width: 768px) {
+  .selection-toolbar {
+    order: -1;
+    width: 100%;
+    justify-content: space-between;
+    margin-right: 0;
+  }
+
+  .notion-table--backlog {
+    min-width: 1450px;
+  }
 }

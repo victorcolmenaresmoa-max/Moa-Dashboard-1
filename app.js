@@ -1164,13 +1164,34 @@ function rowMatchesSearch(row, q) {
 function initTabs() {
   const tabs = document.querySelectorAll(".tab");
   tabs.forEach(tab => {
-    tab.addEventListener("click", () => {
+    tab.addEventListener("click", e => {
+      if (e.target.closest("[data-remove-tab]")) return;
+
       tabs.forEach(t => t.classList.remove("tab--active"));
       tab.classList.add("tab--active");
-      const viewId = "view-" + tab.dataset.tab;
+
+      let viewId = "view-" + tab.dataset.tab;
+      if (!document.getElementById(viewId)) viewId = "view-all-tasks";
+
       document.querySelectorAll(".view").forEach(v => v.classList.remove("view--active"));
       const view = document.getElementById(viewId);
       if (view) view.classList.add("view--active");
+    });
+  });
+
+  document.querySelectorAll("[data-remove-tab]").forEach(removeBtn => {
+    removeBtn.addEventListener("click", e => {
+      e.stopPropagation();
+      const tab = removeBtn.closest(".tab");
+      if (!tab) return;
+
+      const wasActive = tab.classList.contains("tab--active");
+      tab.remove();
+
+      if (wasActive) {
+        const fallback = document.querySelector(".tab");
+        if (fallback) fallback.click();
+      }
     });
   });
 }

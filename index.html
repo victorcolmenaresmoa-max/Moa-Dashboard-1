@@ -20,15 +20,18 @@
     </header>
 
     <div class="tabs-toolbar-row">
-      <nav class="tabs" role="tablist">
-        <button class="tab tab--active" data-tab="all-tasks" role="tab"><span class="tab__icon">⊞</span> All Tasks</button>
-        <button class="tab tab--removable" data-tab="backlog" role="tab">
-          <span class="tab__icon">📋</span> Backlog
-          <span class="tab__remove" data-remove-tab title="Remove view" aria-label="Remove view">×</span>
-        </button>
+      <nav class="tabs" role="tablist" aria-label="Dashboard views">
+        <button class="tab" data-tab="submit" role="tab" aria-selected="false"><span class="tab__icon">📝</span> Submit a task</button>
+        <button class="tab tab--active" data-tab="backlog" role="tab" aria-selected="true"><span class="tab__icon">▦</span> Backlog</button>
       </nav>
 
       <div class="toolbar">
+        <div class="selection-toolbar" id="selection-toolbar" hidden>
+          <span class="selection-toolbar__count" id="selected-count">0 selected</span>
+          <button class="toolbar__btn toolbar__btn--icon toolbar__btn--danger" id="btn-delete-selected" title="Move to Trash" aria-label="Move selected tasks to trash">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M6 2h4M2.75 4h10.5M5 6.25v6M8 6.25v6M11 6.25v6M4 4l.55 9.1A1 1 0 0 0 5.55 14h4.9a1 1 0 0 0 1-.9L12 4" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
         <button class="toolbar__btn toolbar__btn--icon" id="btn-filter" title="Filter">
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M1 3h14M4 8h8M7 13h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
           Filter
@@ -55,8 +58,8 @@
     </div>
 
     <main class="content-area">
-      <div class="view view--active" id="view-all-tasks">
-        <div class="table-wrapper">
+      <div class="view view--active" id="view-backlog">
+        <div class="table-wrapper table-wrapper--backlog">
           <div id="loading-state" class="loading-state">
             <div class="spinner"></div>
             <span>Loading tasks…</span>
@@ -64,16 +67,13 @@
           <div id="error-state" class="error-state" style="display:none;">
             <span>⚠️ Could not load data. Check your SheetDB URL in <code>app.js</code>.</span>
           </div>
-          <table class="notion-table" id="main-table" style="display:none;">
+          <table class="notion-table notion-table--backlog" id="main-table" style="display:none;">
             <thead><tr id="table-head-row"></tr></thead>
             <tbody id="table-body"></tbody>
           </table>
         </div>
       </div>
 
-      <div class="view" id="view-sprint"><div class="placeholder">⚡ Current Sprint view coming soon</div></div>
-      <div class="view" id="view-calendar"><div class="placeholder">📅 Calendar view coming soon</div></div>
-      <div class="view" id="view-timeline"><div class="placeholder">📊 Timeline view coming soon</div></div>
 
       <div class="view" id="view-submit">
         <section class="submit-hero-shell" aria-label="Submit a new MOA task">
@@ -87,7 +87,7 @@
               <div>
                 <p class="eyebrow">MOA Education · Specialists Dashboard</p>
                 <h2>Nueva tarea</h2>
-                <p class="form-note">Crea la información base. Luego puedes abrir la tarea desde All Tasks y añadir sub-items como en Notion.</p>
+                <p class="form-note">Crea la información base. Luego puedes abrir la tarea desde Backlog y añadir sub-items como en Notion.</p>
               </div>
             </div>
 
@@ -162,9 +162,6 @@
         </section>
       </div>
 
-      <div class="view" id="view-weekly"><div class="placeholder">🗓️ Weekly Calendar view coming soon</div></div>
-      <div class="view" id="view-my-tasks"><div class="placeholder">✅ My Tasks view coming soon</div></div>
-      <div class="view" id="view-updates"><div class="placeholder">🕐 Recent Updates view coming soon</div></div>
     </main>
   </div>
 

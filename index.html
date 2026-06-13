@@ -21,8 +21,9 @@
 
     <div class="tabs-toolbar-row">
       <nav class="tabs" role="tablist" aria-label="Dashboard views">
+        <button class="tab tab--active" data-tab="all-tasks" role="tab" aria-selected="true"><span class="tab__icon">⊞</span> All Tasks</button>
         <button class="tab" data-tab="submit" role="tab" aria-selected="false"><span class="tab__icon">📝</span> Submit a task</button>
-        <button class="tab tab--active" data-tab="backlog" role="tab" aria-selected="true"><span class="tab__icon">▦</span> Backlog</button>
+        <button class="tab" data-tab="backlog" role="tab" aria-selected="false"><span class="tab__icon">▦</span> Backlog</button>
       </nav>
 
       <div class="toolbar">
@@ -58,8 +59,8 @@
     </div>
 
     <main class="content-area">
-      <div class="view view--active" id="view-backlog">
-        <div class="table-wrapper table-wrapper--backlog">
+      <div class="view view--active" id="view-all-tasks">
+        <div class="table-wrapper table-wrapper--all-tasks">
           <div id="loading-state" class="loading-state">
             <div class="spinner"></div>
             <span>Loading tasks…</span>
@@ -67,7 +68,7 @@
           <div id="error-state" class="error-state" style="display:none;">
             <span>⚠️ Could not load data. Check your SheetDB URL in <code>app.js</code>.</span>
           </div>
-          <table class="notion-table notion-table--backlog" id="main-table" style="display:none;">
+          <table class="notion-table notion-table--all-tasks" id="main-table" style="display:none;">
             <thead><tr id="table-head-row"></tr></thead>
             <tbody id="table-body"></tbody>
           </table>
@@ -87,7 +88,7 @@
               <div>
                 <p class="eyebrow">MOA Education · Specialists Dashboard</p>
                 <h2>Nueva tarea</h2>
-                <p class="form-note">Crea la información base. Luego puedes abrir la tarea desde Backlog y añadir sub-items como en Notion.</p>
+                <p class="form-note">Crea la información base. Luego puedes abrir la tarea desde All Tasks o Backlog y añadir sub-items como en Notion.</p>
               </div>
             </div>
 

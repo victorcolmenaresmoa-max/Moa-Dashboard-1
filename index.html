@@ -22,8 +22,9 @@
     <div class="tabs-toolbar-row">
       <nav class="tabs" role="tablist" aria-label="Dashboard views">
         <button class="tab tab--active" data-tab="all-tasks" role="tab" aria-selected="true"><span class="tab__icon">⊞</span> All Tasks</button>
-        <button class="tab" data-tab="submit" role="tab" aria-selected="false"><span class="tab__icon">📝</span> Submit a task</button>
         <button class="tab" data-tab="backlog" role="tab" aria-selected="false"><span class="tab__icon">▦</span> Backlog</button>
+        <button class="tab" data-tab="calendar" role="tab" aria-selected="false"><span class="tab__icon">📅</span> Calendar</button>
+        <button class="tab" data-tab="submit" role="tab" aria-selected="false"><span class="tab__icon">📝</span> Submit a task</button>
       </nav>
 
       <div class="toolbar">
@@ -73,6 +74,64 @@
             <tbody id="table-body"></tbody>
           </table>
         </div>
+      </div>
+
+
+      <div class="view" id="view-calendar">
+        <section class="calendar-shell" aria-label="MOA task calendar">
+          <div class="calendar-topbar">
+            <div>
+              <p class="calendar-eyebrow">MOA Calendar</p>
+              <h2 id="calendar-title">Calendar</h2>
+              <p id="calendar-subtitle" class="calendar-subtitle">Clear monthly view of deadlines and workflow starts.</p>
+            </div>
+
+            <div class="calendar-actions">
+              <button type="button" class="calendar-btn" id="calendar-today">Today</button>
+              <div class="calendar-nav" aria-label="Calendar month navigation">
+                <button type="button" class="calendar-icon-btn" id="calendar-prev" aria-label="Previous month">‹</button>
+                <button type="button" class="calendar-icon-btn" id="calendar-next" aria-label="Next month">›</button>
+              </div>
+              <label class="calendar-filter">
+                <span>Specialist</span>
+                <select id="calendar-specialist-filter" aria-label="Filter calendar by specialist">
+                  <option value="all">All specialists</option>
+                </select>
+              </label>
+            </div>
+          </div>
+
+          <div class="calendar-layout">
+            <div class="calendar-main-card">
+              <div class="calendar-main-card__head">
+                <div>
+                  <strong>Monthly deadlines</strong>
+                  <span>Click any card to open the task in All Tasks.</span>
+                </div>
+                <span class="calendar-pill">Deadline 1–4 + Fecha de Inicio y Fin</span>
+              </div>
+              <div class="calendar-board" id="calendar-board"></div>
+            </div>
+
+            <aside class="calendar-sidebar" aria-label="Active deadlines">
+              <div class="calendar-sidebar__head">
+                <strong>Active deadlines</strong>
+                <span>Upcoming items in this view</span>
+              </div>
+              <div id="calendar-active-deadlines" class="calendar-deadlines-list"></div>
+            </aside>
+          </div>
+
+          <div class="calendar-lanes-card">
+            <div class="calendar-lanes-card__head">
+              <div>
+                <strong>Specialist workflow lanes</strong>
+                <span>Quick workload overview by assigned specialist.</span>
+              </div>
+            </div>
+            <div id="calendar-specialist-lanes" class="calendar-specialist-lanes"></div>
+          </div>
+        </section>
       </div>
 
 

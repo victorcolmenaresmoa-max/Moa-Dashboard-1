@@ -34,11 +34,11 @@
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M6 2h4M2.75 4h10.5M5 6.25v6M8 6.25v6M11 6.25v6M4 4l.55 9.1A1 1 0 0 0 5.55 14h4.9a1 1 0 0 0 1-.9L12 4" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </button>
         </div>
-        <button class="toolbar__btn toolbar__btn--icon" id="btn-filter" title="Filter">
+        <button class="toolbar__btn toolbar__btn--icon" id="btn-filter" title="Filter" aria-haspopup="dialog" aria-expanded="false">
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M1 3h14M4 8h8M7 13h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
           Filter
         </button>
-        <button class="toolbar__btn toolbar__btn--icon" id="btn-sort" title="Sort">
+        <button class="toolbar__btn toolbar__btn--icon" id="btn-sort" title="Sort" aria-haspopup="dialog" aria-expanded="false">
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 5h12M4 8h8M6 11h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
           Sort
         </button>
@@ -57,6 +57,11 @@
 
     <div class="search-bar" id="search-bar" style="display:none;">
       <input type="text" id="search-input" placeholder="Search tasks..." class="search-input" />
+    </div>
+
+    <div class="toolbar-panels" id="toolbar-panels" aria-live="polite">
+      <section class="toolbar-panel toolbar-panel--filter" id="filter-panel" hidden aria-label="Filter tasks"></section>
+      <section class="toolbar-panel toolbar-panel--sort" id="sort-panel" hidden aria-label="Sort tasks"></section>
     </div>
 
     <main class="content-area">

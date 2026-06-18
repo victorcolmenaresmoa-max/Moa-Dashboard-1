@@ -251,6 +251,8 @@ let createSelectedVerticals = new Set();
 let openSubitems = loadOpenSubitems();
 let selectedRowKeys = new Set();
 let activeDashboardView = "all-tasks";
+let calendarDate = new Date();
+let calendarSpecialistFilter = "all";
 
 // ─── Fetch from SheetDB ─────────────────────────────────────────────────────
 async function fetchData() {
@@ -266,7 +268,7 @@ async function fetchData() {
     allData = normalizeRows(SEED_DATA);
     filteredData = [...allData];
     loading.style.display = "none";
-    renderTable(filteredData);
+    applyCurrentFiltersAndRender();
     return;
   }
 
@@ -284,7 +286,7 @@ async function fetchData() {
     filteredData = [...allData];
 
     loading.style.display = "none";
-    renderTable(filteredData);
+    applyCurrentFiltersAndRender();
   } catch (err) {
     console.error("SheetDB error:", err);
     loading.style.display = "none";
@@ -558,6 +560,10 @@ function saveOpenSubitems() {
 
 function isBacklogView() {
   return activeDashboardView === "backlog";
+}
+
+function isCalendarView() {
+  return activeDashboardView === "calendar";
 }
 
 function getVisibleColumns() {
@@ -1388,6 +1394,11 @@ function handleSearch(query) {
 function applyCurrentFiltersAndRender() {
   const q = currentSearchQuery;
 
+  if (isCalendarView()) {
+    renderCalendar();
+    return;
+  }
+
   if (!q) {
     filteredData = [...allData];
     renderTable(filteredData);
@@ -1418,6 +1429,385 @@ function rowMatchesSearch(row, q) {
   return COLUMNS.some(col => String(row[col.key] || "").toLowerCase().includes(q));
 }
 
+
+// ─── Calendar View ─────────────────────────────────────────────────────────
+function initCalendarView() {
+  const prev = document.getElementById("calendar-prev");
+  const next = document.getElementById("calendar-next");
+  const today = document.getElementById("calendar-today");
+  const specialistFilter = document.getElementById("calendar-specialist-filter");
+  const board = document.getElementById("calendar-board");
+  const sidebar = document.getElementById("calendar-active-deadlines");
+
+  populateCalendarSpecialistFilter();
+
+  if (prev) {
+    prev.addEventListener("click", () => {
+      calendarDate = new Date(calendarDate.getFullYear(), calendarDate.getMonth() - 1, 1);
+      renderCalendar();
+    });
+  }
+
+  if (next) {
+    next.addEventListener("click", () => {
+      calendarDate = new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1, 1);
+      renderCalendar();
+    });
+  }
+
+  if (today) {
+    today.addEventListener("click", () => {
+      calendarDate = new Date();
+      renderCalendar();
+    });
+  }
+
+  if (specialistFilter) {
+    specialistFilter.addEventListener("change", () => {
+      calendarSpecialistFilter = specialistFilter.value || "all";
+      renderCalendar();
+    });
+  }
+
+  [board, sidebar].forEach(target => {
+    if (!target) return;
+    target.addEventListener("click", e => {
+      const card = e.target.closest("[data-calendar-row]");
+      if (!card) return;
+      const row = getRowByClientKey(card.dataset.calendarRow);
+      if (row) openCalendarTaskInTable(row);
+    });
+  });
+}
+
+function populateCalendarSpecialistFilter() {
+  const select = document.getElementById("calendar-specialist-filter");
+  if (!select) return;
+
+  const options = [
+    `<option value="all">All specialists</option>`,
+    ...OPTIONS.specialists.map(name => `<option value="${esc(name)}">${esc(name)}</option>`)
+  ];
+
+  select.innerHTML = options.join("");
+  select.value = calendarSpecialistFilter;
+}
+
+function renderCalendar() {
+  const board = document.getElementById("calendar-board");
+  const title = document.getElementById("calendar-title");
+  const subtitle = document.getElementById("calendar-subtitle");
+  const deadlines = document.getElementById("calendar-active-deadlines");
+  const lanes = document.getElementById("calendar-specialist-lanes");
+  const select = document.getElementById("calendar-specialist-filter");
+
+  if (!board || !title || !deadlines) return;
+
+  if (select && select.value !== calendarSpecialistFilter) select.value = calendarSpecialistFilter;
+
+  title.textContent = calendarDate.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+  if (subtitle) {
+    const filterText = calendarSpecialistFilter === "all" ? "all specialists" : calendarSpecialistFilter;
+    subtitle.textContent = `Clear monthly view of deadlines and workflow starts for ${filterText}.`;
+  }
+
+  const days = getCalendarMonthDays(calendarDate);
+  const items = getCalendarItems();
+  const itemsByDay = groupCalendarItemsByDay(items);
+
+  board.innerHTML = `
+    <div class="calendar-weekdays">
+      ${["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(day => `<div>${day}</div>`).join("")}
+    </div>
+    <div class="calendar-days">
+      ${days.map(day => renderCalendarDay(day, itemsByDay.get(dateToISO(day)) || [])).join("")}
+    </div>
+  `;
+
+  deadlines.innerHTML = renderActiveDeadlines(items);
+  if (lanes) lanes.innerHTML = renderSpecialistLanes(items);
+}
+
+function getCalendarItems() {
+  const q = currentSearchQuery;
+  const monthStart = new Date(calendarDate.getFullYear(), calendarDate.getMonth(), 1);
+  const monthEnd = new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1, 0);
+  const visibleStart = new Date(monthStart);
+  visibleStart.setDate(visibleStart.getDate() - visibleStart.getDay());
+  const visibleEnd = new Date(monthEnd);
+  visibleEnd.setDate(visibleEnd.getDate() + (6 - visibleEnd.getDay()));
+
+  const items = [];
+
+  allData.forEach(row => {
+    if (!rowMatchesCalendarFilters(row, q)) return;
+
+    const title = String(row["TASKS"] || "Untitled").trim();
+    if (!title) return;
+
+    ["Deadline 1", "Deadline 2", "Deadline 3", "Deadline 4"].forEach((key, index) => {
+      const date = parseFlexibleDate(row[key]);
+      if (!date) return;
+      if (date < visibleStart || date > visibleEnd) return;
+      items.push({
+        row,
+        date,
+        endDate: null,
+        type: "deadline",
+        dateKey: key,
+        label: `D${index + 1}`,
+        title,
+        specialists: splitMulti(row["Specialists"]),
+        status: row["Estado"] || "Not started"
+      });
+    });
+
+    const [startText, endText] = parseDateRange(row["Fecha de Inicio y Fin"] || "");
+    const startDate = parseFlexibleDate(startText);
+    const endDate = parseFlexibleDate(endText) || startDate;
+
+    if (startDate && startDate >= visibleStart && startDate <= visibleEnd) {
+      items.push({
+        row,
+        date: startDate,
+        endDate,
+        type: "workflow",
+        dateKey: "Fecha de Inicio y Fin",
+        label: "Flow",
+        title,
+        specialists: splitMulti(row["Specialists"]),
+        status: row["Estado"] || "Not started"
+      });
+    }
+  });
+
+  return items.sort((a, b) => {
+    const diff = a.date - b.date;
+    if (diff !== 0) return diff;
+    return a.title.localeCompare(b.title);
+  });
+}
+
+function rowMatchesCalendarFilters(row, q) {
+  if (q && !rowMatchesSearch(row, q)) return false;
+  if (calendarSpecialistFilter === "all") return true;
+  return splitMulti(row["Specialists"]).some(name => name === calendarSpecialistFilter);
+}
+
+function groupCalendarItemsByDay(items) {
+  const map = new Map();
+  items.forEach(item => {
+    const key = dateToISO(item.date);
+    if (!map.has(key)) map.set(key, []);
+    map.get(key).push(item);
+  });
+  return map;
+}
+
+function renderCalendarDay(day, items) {
+  const isOutside = day.getMonth() !== calendarDate.getMonth();
+  const isToday = dateToISO(day) === dateToISO(new Date());
+  const visibleItems = items.slice(0, 4);
+  const overflow = Math.max(items.length - visibleItems.length, 0);
+
+  return `
+    <div class="calendar-day ${isOutside ? "calendar-day--outside" : ""} ${isToday ? "calendar-day--today" : ""}">
+      <div class="calendar-day__head">
+        <span>${day.getDate()}</span>
+        ${isToday ? `<strong>Today</strong>` : ""}
+      </div>
+      <div class="calendar-day__items">
+        ${visibleItems.map(item => renderCalendarCard(item)).join("")}
+        ${overflow ? `<div class="calendar-more">+${overflow} more</div>` : ""}
+      </div>
+    </div>
+  `;
+}
+
+function renderCalendarCard(item) {
+  const status = getEstadoSlug(item.status);
+  const dateText = item.type === "workflow" && item.endDate
+    ? `${formatCalendarDate(item.date)} → ${formatCalendarDate(item.endDate)}`
+    : formatCalendarDate(item.date);
+  const people = item.specialists.length ? item.specialists.join(", ") : "No specialist assigned";
+  const isSub = isSubitem(item.row);
+
+  return `
+    <button type="button" class="calendar-card calendar-card--${status} ${isSub ? "calendar-card--subitem" : ""}" data-calendar-row="${esc(item.row.__clientKey)}" title="${esc(item.title)} · ${esc(people)} · ${esc(dateText)}">
+      <span class="calendar-card__meta"><b>${esc(item.label)}</b>${esc(dateText)}</span>
+      <span class="calendar-card__title">${isSub ? "↳ " : ""}${esc(item.title)}</span>
+      <span class="calendar-card__people">${esc(people)}</span>
+    </button>
+  `;
+}
+
+function renderActiveDeadlines(items) {
+  const today = stripTime(new Date());
+  const monthStart = new Date(calendarDate.getFullYear(), calendarDate.getMonth(), 1);
+  const monthEnd = new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1, 0);
+
+  let deadlines = items
+    .filter(item => item.type === "deadline")
+    .filter(item => item.date >= today || (item.date >= monthStart && item.date <= monthEnd))
+    .sort((a, b) => a.date - b.date)
+    .slice(0, 14);
+
+  if (!deadlines.length) {
+    deadlines = items
+      .filter(item => item.type === "deadline")
+      .sort((a, b) => a.date - b.date)
+      .slice(0, 10);
+  }
+
+  if (!deadlines.length) {
+    return `
+      <div class="calendar-empty-state">
+        <strong>No deadlines found</strong>
+        <span>Add dates in Deadline 1–4 or adjust your filter.</span>
+      </div>
+    `;
+  }
+
+  return deadlines.map(item => {
+    const status = getEstadoSlug(item.status);
+    const people = item.specialists.length ? item.specialists.join(", ") : "No specialist assigned";
+    return `
+      <button type="button" class="deadline-card deadline-card--${status}" data-calendar-row="${esc(item.row.__clientKey)}">
+        <div class="deadline-card__date">
+          <strong>${esc(formatCalendarDate(item.date))}</strong>
+          <span>${esc(item.label)}</span>
+        </div>
+        <div class="deadline-card__body">
+          <strong>${esc(item.title)}</strong>
+          <span>${esc(people)}</span>
+          <em>${esc(item.status)}</em>
+        </div>
+      </button>
+    `;
+  }).join("");
+}
+
+function renderSpecialistLanes(items) {
+  const specialists = calendarSpecialistFilter === "all"
+    ? OPTIONS.specialists
+    : [calendarSpecialistFilter];
+
+  const monthItems = items.filter(item => item.date.getMonth() === calendarDate.getMonth());
+  const lanes = specialists
+    .map(name => {
+      const assigned = monthItems.filter(item => item.specialists.includes(name));
+      if (!assigned.length && calendarSpecialistFilter !== name) return "";
+      const visible = assigned.slice(0, 5);
+      return `
+        <div class="specialist-lane">
+          <div class="specialist-lane__person">
+            <span>${esc(getInitials(name))}</span>
+            <strong>${esc(name)}</strong>
+            <em>${assigned.length} item${assigned.length === 1 ? "" : "s"}</em>
+          </div>
+          <div class="specialist-lane__items">
+            ${visible.length ? visible.map(item => renderLaneChip(item)).join("") : `<span class="lane-empty">No scheduled items this month</span>`}
+            ${assigned.length > visible.length ? `<span class="lane-more">+${assigned.length - visible.length} more</span>` : ""}
+          </div>
+        </div>
+      `;
+    })
+    .filter(Boolean)
+    .join("");
+
+  if (!lanes) {
+    return `
+      <div class="calendar-empty-state calendar-empty-state--lanes">
+        <strong>No workflow items for this specialist</strong>
+        <span>Try another month or use Deadline 1–4 / Fecha de Inicio y Fin.</span>
+      </div>
+    `;
+  }
+
+  return lanes;
+}
+
+function renderLaneChip(item) {
+  const status = getEstadoSlug(item.status);
+  return `
+    <button type="button" class="lane-chip lane-chip--${status}" data-calendar-row="${esc(item.row.__clientKey)}">
+      <span>${esc(formatCalendarDate(item.date))}</span>
+      <strong>${esc(item.title)}</strong>
+      <em>${esc(item.label)}</em>
+    </button>
+  `;
+}
+
+function openCalendarTaskInTable(row) {
+  const input = document.getElementById("search-input");
+  const searchBar = document.getElementById("search-bar");
+  const title = String(row["TASKS"] || "").trim();
+
+  if (input && searchBar && title) {
+    searchBar.style.display = "block";
+    input.value = title;
+    currentSearchQuery = title.toLowerCase();
+  }
+
+  setActiveTab("all-tasks");
+}
+
+function getCalendarMonthDays(baseDate) {
+  const first = new Date(baseDate.getFullYear(), baseDate.getMonth(), 1);
+  const start = new Date(first);
+  start.setDate(start.getDate() - start.getDay());
+
+  return Array.from({ length: 42 }, (_, index) => {
+    const day = new Date(start);
+    day.setDate(start.getDate() + index);
+    return day;
+  });
+}
+
+function parseFlexibleDate(value) {
+  const clean = String(value || "").trim();
+  if (!clean) return null;
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(clean)) {
+    const parsed = new Date(`${clean}T00:00:00`);
+    return Number.isNaN(parsed.getTime()) ? null : stripTime(parsed);
+  }
+
+  const parsed = new Date(clean);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return stripTime(parsed);
+}
+
+function stripTime(date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function dateToISO(date) {
+  const d = stripTime(date);
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function formatCalendarDate(date) {
+  if (!date) return "";
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+function getEstadoSlug(val) {
+  const key = String(val || "").toLowerCase().replace(/\s+/g, "");
+  const map = {
+    "notstarted": "notstarted",
+    "inprogress": "inprogress",
+    "standby": "standby",
+    "blocked": "blocked",
+    "done": "done",
+    "delayeddone": "delayeddone"
+  };
+  return map[key] || "notstarted";
+}
+
 // ─── Tabs ───────────────────────────────────────────────────────────────────
 function setActiveTab(tabName) {
   const targetTab = tabName || "all-tasks";
@@ -1435,6 +1825,15 @@ function setActiveTab(tabName) {
     const submitView = document.getElementById("view-submit");
     if (submitView) submitView.classList.add("view--active");
     updateSelectionToolbar();
+    return;
+  }
+
+  if (targetTab === "calendar") {
+    activeDashboardView = "calendar";
+    const calendarView = document.getElementById("view-calendar");
+    if (calendarView) calendarView.classList.add("view--active");
+    updateSelectionToolbar();
+    renderCalendar();
     return;
   }
 
@@ -1786,6 +2185,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initInlineEditing();
   initSubitemInteractions();
   initSelectionInteractions();
+  initCalendarView();
   initSubmitForm();
   fetchData();
 });

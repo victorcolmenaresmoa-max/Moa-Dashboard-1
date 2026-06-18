@@ -246,6 +246,8 @@ let sortDir = "asc";
 let activeEditor = null;
 let activeSubitemParentKey = null;
 let currentSearchQuery = "";
+let activeToolbarPanel = null;
+let activeFilters = createEmptyFilters();
 let createSelectedSpecialists = new Set();
 let createSelectedVerticals = new Set();
 let openSubitems = loadOpenSubitems();
@@ -253,6 +255,66 @@ let selectedRowKeys = new Set();
 let activeDashboardView = "all-tasks";
 let calendarDate = new Date();
 let calendarSpecialistFilter = "all";
+
+const FILTER_CONFIG = {
+  tipo: {
+    key: "Tipo de trabajo",
+    label: "Tipo de trabajo",
+    options: OPTIONS.tipo,
+    multiple: false
+  },
+  estado: {
+    key: "Estado",
+    label: "Estado",
+    options: OPTIONS.estado,
+    multiple: false
+  },
+  vertical: {
+    key: "Vertical",
+    label: "Vertical",
+    options: OPTIONS.vertical,
+    multiple: true
+  },
+  specialists: {
+    key: "Specialists",
+    label: "Specialists",
+    options: OPTIONS.specialists,
+    multiple: true
+  },
+  calidad: {
+    key: "Calidad",
+    label: "Calidad",
+    options: OPTIONS.calidad,
+    multiple: false
+  }
+};
+
+const SORT_OPTIONS = [
+  { key: "TASKS", label: "Task name" },
+  { key: "Deadline 1", label: "Deadline 1" },
+  { key: "__nextDeadline", label: "Next deadline" },
+  { key: "Fecha de Inicio y Fin", label: "Workflow start" },
+  { key: "Estado", label: "Estado" },
+  { key: "Tipo de trabajo", label: "Tipo de trabajo" },
+  { key: "Vertical", label: "Vertical" },
+  { key: "Specialists", label: "Specialists" },
+  { key: "Rondas de revisión", label: "Rondas de revisión" }
+];
+
+const DEADLINE_KEYS = ["Deadline 1", "Deadline 2", "Deadline 3", "Deadline 4"];
+
+function createEmptyFilters() {
+  return {
+    tipo: new Set(),
+    estado: new Set(),
+    vertical: new Set(),
+    specialists: new Set(),
+    calidad: new Set(),
+    deadlineMode: "all",
+    dateFrom: "",
+    dateTo: ""
+  };
+}
 
 // ─── Fetch from SheetDB ─────────────────────────────────────────────────────
 async function fetchData() {
@@ -748,7 +810,15 @@ function renderTable(data) {
 
   visibleColumns.forEach(col => {
     const th = document.createElement("th");
-    th.innerHTML = `<div class="th-inner"><span class="th-icon">${col.icon}</span>${col.label}</div>`;
+    const isSorted = sortKey === col.key;
+    th.classList.toggle("th--sorted", isSorted);
+    th.innerHTML = `
+      <div class="th-inner">
+        <span class="th-icon">${col.icon}</span>
+        <span>${col.label}</span>
+        ${isSorted ? `<span class="th-sort-indicator">${sortDir === "asc" ? "↑" : "↓"}</span>` : ""}
+      </div>
+    `;
     th.dataset.key = col.key;
     th.title = `Sort by ${col.label}`;
     th.addEventListener("click", () => handleSort(col.key));
@@ -757,7 +827,8 @@ function renderTable(data) {
 
   tbody.innerHTML = "";
 
-  const subitemsByParent = groupSubitems(allData);
+  const hasRefinement = Boolean(currentSearchQuery) || hasActiveFilters();
+  const subitemsByParent = groupSubitems(data);
   const visibleParents = data.filter(row => !isSubitem(row));
   const colSpan = visibleColumns.length + (showSelector ? 1 : 0);
 
@@ -776,18 +847,14 @@ function renderTable(data) {
       tbody.appendChild(createTableRow(parent, { isSubitem: false }));
 
       const children = subitemsByParent.get(parent.ID) || [];
-      const shouldShowChildren = currentSearchQuery || isRowExpanded(parent);
+      const shouldShowChildren = hasRefinement || isRowExpanded(parent);
 
       if (shouldShowChildren) {
-        const visibleChildren = currentSearchQuery
-          ? children.filter(child => data.includes(child))
-          : children;
-
-        visibleChildren.forEach(child => {
+        children.forEach(child => {
           tbody.appendChild(createTableRow(child, { isSubitem: true }));
         });
 
-        if (!currentSearchQuery) {
+        if (!hasRefinement) {
           tbody.appendChild(createSubitemCreateRow(parent));
         }
       }
@@ -1365,7 +1432,7 @@ function formatDateForDisplay(inputDate) {
   });
 }
 
-// ─── Sort ───────────────────────────────────────────────────────────────────
+// ─── Sort + Filter + Search ───────────────────────────────────────────────
 function handleSort(key) {
   if (activeEditor) activeEditor = null;
 
@@ -1376,16 +1443,105 @@ function handleSort(key) {
     sortDir = "asc";
   }
 
-  filteredData = [...filteredData].sort((a, b) => {
-    const av = (a[key] || "").toString().toLowerCase();
-    const bv = (b[key] || "").toString().toLowerCase();
-    return sortDir === "asc" ? av.localeCompare(bv) : bv.localeCompare(av);
-  });
-
-  renderTable(filteredData);
+  applyCurrentFiltersAndRender();
+  renderSortPanel();
+  updateToolbarButtons();
 }
 
-// ─── Search ─────────────────────────────────────────────────────────────────
+function setSort(key, direction = sortDir) {
+  sortKey = key || null;
+  sortDir = direction === "desc" ? "desc" : "asc";
+  applyCurrentFiltersAndRender();
+  renderSortPanel();
+  updateToolbarButtons();
+}
+
+function clearSort() {
+  sortKey = null;
+  sortDir = "asc";
+  applyCurrentFiltersAndRender();
+  renderSortPanel();
+  updateToolbarButtons();
+}
+
+function applySortToRows(rows) {
+  const list = [...rows];
+  if (!sortKey) return list.sort((a, b) => (a.__localIndex || 0) - (b.__localIndex || 0));
+
+  const direction = sortDir === "desc" ? -1 : 1;
+
+  return list
+    .map((row, index) => ({ row, index }))
+    .sort((a, b) => {
+      const av = getComparableSortValue(a.row, sortKey);
+      const bv = getComparableSortValue(b.row, sortKey);
+
+      if (av.empty && bv.empty) return a.index - b.index;
+      if (av.empty) return 1;
+      if (bv.empty) return -1;
+
+      let result = 0;
+      if (av.type === "number" || bv.type === "number") {
+        result = Number(av.value) - Number(bv.value);
+      } else {
+        result = String(av.value).localeCompare(String(bv.value), undefined, {
+          numeric: true,
+          sensitivity: "base"
+        });
+      }
+
+      if (result === 0) return a.index - b.index;
+      return result * direction;
+    })
+    .map(item => item.row);
+}
+
+function getComparableSortValue(row, key) {
+  if (key === "__nextDeadline") {
+    const nextDate = getNextDeadlineDate(row);
+    return nextDate
+      ? { value: nextDate.getTime(), type: "number", empty: false }
+      : { value: "", type: "text", empty: true };
+  }
+
+  if (DEADLINE_KEYS.includes(key) || key === "Fecha de Inicio y Fin") {
+    const raw = key === "Fecha de Inicio y Fin" ? parseDateRange(row[key] || "")[0] : row[key];
+    const date = parseFlexibleDate(raw);
+    return date
+      ? { value: date.getTime(), type: "number", empty: false }
+      : { value: "", type: "text", empty: true };
+  }
+
+  if (key === "Estado") {
+    const value = String(row[key] || "").trim();
+    const index = OPTIONS.estado.findIndex(option => normalizeText(option) === normalizeText(value));
+    return value
+      ? { value: index === -1 ? 999 : index, type: "number", empty: false }
+      : { value: "", type: "text", empty: true };
+  }
+
+  if (key === "Tipo de trabajo") {
+    const value = String(row[key] || "").trim();
+    const index = OPTIONS.tipo.findIndex(option => normalizeText(option) === normalizeText(value));
+    return value
+      ? { value: index === -1 ? value : index, type: index === -1 ? "text" : "number", empty: false }
+      : { value: "", type: "text", empty: true };
+  }
+
+  if (key === "Rondas de revisión") {
+    const raw = String(row[key] || "").trim();
+    const number = Number(raw.replace(/[^0-9.-]/g, ""));
+    return Number.isFinite(number) && raw
+      ? { value: number, type: "number", empty: false }
+      : { value: "", type: "text", empty: true };
+  }
+
+  const value = String(row[key] || "").trim();
+  return value
+    ? { value: normalizeText(value), type: "text", empty: false }
+    : { value: "", type: "text", empty: true };
+}
+
 function handleSearch(query) {
   currentSearchQuery = query.toLowerCase().trim();
   applyCurrentFiltersAndRender();
@@ -1393,42 +1549,546 @@ function handleSearch(query) {
 
 function applyCurrentFiltersAndRender() {
   const q = currentSearchQuery;
+  const hasRefinement = Boolean(q) || hasActiveFilters();
 
   if (isCalendarView()) {
     renderCalendar();
+    updateToolbarButtons();
     return;
   }
 
-  if (!q) {
-    filteredData = [...allData];
-    renderTable(filteredData);
-    return;
+  let nextData;
+
+  if (!hasRefinement) {
+    nextData = [...allData];
+  } else {
+    const matchingParentIds = new Set();
+    const matchingRowKeys = new Set();
+
+    allData.forEach(row => {
+      if (!rowMatchesCurrentRefinements(row, q)) return;
+
+      matchingRowKeys.add(getRowKey(row));
+      if (isSubitem(row)) {
+        matchingParentIds.add(String(row[PARENT_ID_KEY] || "").trim());
+      } else {
+        matchingParentIds.add(String(row.ID || "").trim());
+      }
+    });
+
+    nextData = allData.filter(row => {
+      if (matchingRowKeys.has(getRowKey(row))) return true;
+      if (isSubitem(row)) return false;
+      return matchingParentIds.has(String(row.ID || "").trim());
+    });
   }
 
-  const matchingParentIds = new Set();
-
-  allData.forEach(row => {
-    if (!rowMatchesSearch(row, q)) return;
-    if (isSubitem(row)) {
-      matchingParentIds.add(String(row[PARENT_ID_KEY] || "").trim());
-    } else {
-      matchingParentIds.add(String(row.ID || "").trim());
-    }
-  });
-
-  filteredData = allData.filter(row => {
-    if (rowMatchesSearch(row, q)) return true;
-    if (isSubitem(row)) return matchingParentIds.has(String(row[PARENT_ID_KEY] || "").trim());
-    return matchingParentIds.has(String(row.ID || "").trim());
-  });
-
+  filteredData = applySortToRows(nextData);
   renderTable(filteredData);
+  updateToolbarButtons();
+}
+
+function rowMatchesCurrentRefinements(row, q = currentSearchQuery) {
+  if (q && !rowMatchesSearch(row, q)) return false;
+  return rowMatchesActiveFilters(row);
 }
 
 function rowMatchesSearch(row, q) {
   return COLUMNS.some(col => String(row[col.key] || "").toLowerCase().includes(q));
 }
 
+function rowMatchesActiveFilters(row) {
+  if (!matchesFilterSet(row, "tipo")) return false;
+  if (!matchesFilterSet(row, "estado")) return false;
+  if (!matchesFilterSet(row, "vertical")) return false;
+  if (!matchesFilterSet(row, "specialists")) return false;
+  if (!matchesFilterSet(row, "calidad")) return false;
+  if (!matchesDeadlineFilters(row)) return false;
+  return true;
+}
+
+function matchesFilterSet(row, filterName) {
+  const selected = activeFilters[filterName];
+  if (!selected || selected.size === 0) return true;
+
+  const config = FILTER_CONFIG[filterName];
+  const raw = String(row[config.key] || "").trim();
+  if (!raw) return false;
+
+  if (config.multiple) {
+    const values = splitMulti(raw).map(normalizeText);
+    return Array.from(selected).some(option => values.includes(normalizeText(option)));
+  }
+
+  return selected.has(raw) || Array.from(selected).some(option => normalizeText(option) === normalizeText(raw));
+}
+
+function matchesDeadlineFilters(row) {
+  const dates = getRowDeadlineDates(row);
+  const mode = activeFilters.deadlineMode;
+  const today = stripTime(new Date());
+  const sevenDays = addDays(today, 7);
+  const thirtyDays = addDays(today, 30);
+  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+  const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+  const isComplete = isRowComplete(row);
+
+  if (mode === "has_deadline" && dates.length === 0) return false;
+  if (mode === "no_deadline" && dates.length > 0) return false;
+  if (mode === "overdue" && (isComplete || !dates.some(date => date < today))) return false;
+  if (mode === "due_7" && !dates.some(date => date >= today && date <= sevenDays)) return false;
+  if (mode === "due_30" && !dates.some(date => date >= today && date <= thirtyDays)) return false;
+  if (mode === "this_month" && !dates.some(date => date >= monthStart && date <= monthEnd)) return false;
+
+  const from = activeFilters.dateFrom ? parseFlexibleDate(activeFilters.dateFrom) : null;
+  const to = activeFilters.dateTo ? parseFlexibleDate(activeFilters.dateTo) : null;
+
+  if (from && !dates.some(date => date >= from)) return false;
+  if (to && !dates.some(date => date <= to)) return false;
+  if ((from || to) && dates.length === 0) return false;
+
+  return true;
+}
+
+function getRowDeadlineDates(row) {
+  return DEADLINE_KEYS
+    .map(key => parseFlexibleDate(row[key]))
+    .filter(Boolean)
+    .sort((a, b) => a - b);
+}
+
+function getNextDeadlineDate(row) {
+  const today = stripTime(new Date());
+  const future = getRowDeadlineDates(row).filter(date => date >= today);
+  return future[0] || getRowDeadlineDates(row)[0] || null;
+}
+
+function addDays(date, days) {
+  const copy = new Date(date);
+  copy.setDate(copy.getDate() + days);
+  return copy;
+}
+
+function isRowComplete(row) {
+  const status = normalizeText(row["Estado"] || "");
+  return status === "done" || status === "delayeddone";
+}
+
+function normalizeText(value) {
+  return String(value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function hasActiveFilters() {
+  return countActiveFilters() > 0;
+}
+
+function countActiveFilters() {
+  const setCount = ["tipo", "estado", "vertical", "specialists", "calidad"]
+    .reduce((total, key) => total + activeFilters[key].size, 0);
+
+  const deadlineCount = activeFilters.deadlineMode !== "all" ? 1 : 0;
+  const dateCount = (activeFilters.dateFrom ? 1 : 0) + (activeFilters.dateTo ? 1 : 0);
+
+  return setCount + deadlineCount + dateCount;
+}
+
+function clearFilters() {
+  activeFilters = createEmptyFilters();
+  applyCurrentFiltersAndRender();
+  renderFilterPanel();
+  updateToolbarButtons();
+}
+
+function getAvailableFilterOptions(filterName) {
+  const config = FILTER_CONFIG[filterName];
+  const values = new Map();
+
+  (config.options || []).forEach(option => {
+    values.set(normalizeText(option), option);
+  });
+
+  allData.forEach(row => {
+    const raw = String(row[config.key] || "").trim();
+    const parts = config.multiple ? splitMulti(raw) : [raw];
+    parts.filter(Boolean).forEach(part => {
+      const normalized = normalizeText(part);
+      if (!values.has(normalized)) values.set(normalized, part);
+    });
+  });
+
+  return Array.from(values.values()).filter(Boolean);
+}
+
+function getFilterOptionCount(filterName, option) {
+  const config = FILTER_CONFIG[filterName];
+  return allData.filter(row => {
+    const raw = String(row[config.key] || "").trim();
+    if (!raw) return false;
+    if (config.multiple) {
+      return splitMulti(raw).some(value => normalizeText(value) === normalizeText(option));
+    }
+    return normalizeText(raw) === normalizeText(option);
+  }).length;
+}
+
+function getSortedResultCount() {
+  return filteredData.filter(row => !isSubitem(row)).length;
+}
+
+function renderFilterPanel() {
+  const panel = document.getElementById("filter-panel");
+  if (!panel) return;
+
+  panel.innerHTML = `
+    <div class="toolbar-panel__header">
+      <div>
+        <strong>Filter tasks</strong>
+        <span>${getSortedResultCount()} visible parent task${getSortedResultCount() === 1 ? "" : "s"}</span>
+      </div>
+      <button type="button" class="toolbar-panel__x" data-close-toolbar aria-label="Close filter panel">×</button>
+    </div>
+    <div class="toolbar-panel__body toolbar-panel__body--filters">
+      ${renderFilterSummary()}
+      <div class="filter-grid">
+        ${renderFilterGroup("estado")}
+        ${renderFilterGroup("tipo")}
+        ${renderFilterGroup("vertical")}
+        ${renderFilterGroup("specialists")}
+        ${renderFilterGroup("calidad")}
+      </div>
+      <div class="filter-section filter-section--deadline">
+        <div class="filter-section__title">Deadline intelligence</div>
+        <div class="deadline-filter-grid">
+          <label class="toolbar-field">
+            <span>Deadline status</span>
+            <select id="filter-deadline-mode">
+              ${renderDeadlineModeOption("all", "All deadlines")}
+              ${renderDeadlineModeOption("has_deadline", "Has any deadline")}
+              ${renderDeadlineModeOption("no_deadline", "No deadline")}
+              ${renderDeadlineModeOption("overdue", "Overdue and not done")}
+              ${renderDeadlineModeOption("due_7", "Due in the next 7 days")}
+              ${renderDeadlineModeOption("due_30", "Due in the next 30 days")}
+              ${renderDeadlineModeOption("this_month", "Due this month")}
+            </select>
+          </label>
+          <label class="toolbar-field">
+            <span>From</span>
+            <input type="date" id="filter-date-from" value="${esc(activeFilters.dateFrom)}" />
+          </label>
+          <label class="toolbar-field">
+            <span>To</span>
+            <input type="date" id="filter-date-to" value="${esc(activeFilters.dateTo)}" />
+          </label>
+        </div>
+      </div>
+      <div class="toolbar-panel__actions">
+        <button type="button" class="toolbar-secondary-btn" data-clear-filters>Clear filters</button>
+        <button type="button" class="toolbar-primary-btn" data-close-toolbar>Done</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderFilterSummary() {
+  const chips = [];
+
+  Object.keys(FILTER_CONFIG).forEach(filterName => {
+    activeFilters[filterName].forEach(value => {
+      chips.push(`<button type="button" class="filter-chip" data-remove-filter="${esc(filterName)}" data-value="${esc(value)}">${esc(value)} <span>×</span></button>`);
+    });
+  });
+
+  if (activeFilters.deadlineMode !== "all") {
+    chips.push(`<button type="button" class="filter-chip" data-deadline-mode="all">${esc(getDeadlineModeLabel(activeFilters.deadlineMode))} <span>×</span></button>`);
+  }
+
+  if (activeFilters.dateFrom) {
+    chips.push(`<button type="button" class="filter-chip" data-clear-date="from">From ${esc(activeFilters.dateFrom)} <span>×</span></button>`);
+  }
+
+  if (activeFilters.dateTo) {
+    chips.push(`<button type="button" class="filter-chip" data-clear-date="to">To ${esc(activeFilters.dateTo)} <span>×</span></button>`);
+  }
+
+  if (!chips.length) {
+    return `<div class="filter-summary filter-summary--empty">No active filters. Add one to narrow the table or calendar.</div>`;
+  }
+
+  return `<div class="filter-summary">${chips.join("")}</div>`;
+}
+
+function renderFilterGroup(filterName) {
+  const config = FILTER_CONFIG[filterName];
+  const selected = activeFilters[filterName];
+  const options = getAvailableFilterOptions(filterName);
+
+  return `
+    <div class="filter-section">
+      <div class="filter-section__title">${esc(config.label)}</div>
+      <div class="filter-options">
+        ${options.map(option => {
+          const count = getFilterOptionCount(filterName, option);
+          const isChecked = selected.has(option) || Array.from(selected).some(item => normalizeText(item) === normalizeText(option));
+          return `
+            <label class="filter-option ${isChecked ? "is-selected" : ""}">
+              <input type="checkbox" data-filter-name="${esc(filterName)}" value="${esc(option)}" ${isChecked ? "checked" : ""} />
+              <span>${esc(option)}</span>
+              <em>${count}</em>
+            </label>
+          `;
+        }).join("")}
+      </div>
+    </div>
+  `;
+}
+
+function renderDeadlineModeOption(value, label) {
+  return `<option value="${esc(value)}" ${activeFilters.deadlineMode === value ? "selected" : ""}>${esc(label)}</option>`;
+}
+
+function getDeadlineModeLabel(value) {
+  const map = {
+    all: "All deadlines",
+    has_deadline: "Has any deadline",
+    no_deadline: "No deadline",
+    overdue: "Overdue",
+    due_7: "Due in 7 days",
+    due_30: "Due in 30 days",
+    this_month: "Due this month"
+  };
+  return map[value] || value;
+}
+
+function renderSortPanel() {
+  const panel = document.getElementById("sort-panel");
+  if (!panel) return;
+
+  panel.innerHTML = `
+    <div class="toolbar-panel__header">
+      <div>
+        <strong>Sort tasks</strong>
+        <span>${sortKey ? `Sorted by ${esc(getSortLabel(sortKey))}` : "Using original sheet order"}</span>
+      </div>
+      <button type="button" class="toolbar-panel__x" data-close-toolbar aria-label="Close sort panel">×</button>
+    </div>
+    <div class="toolbar-panel__body">
+      <label class="toolbar-field">
+        <span>Sort by</span>
+        <select id="sort-field">
+          <option value="" ${!sortKey ? "selected" : ""}>Original sheet order</option>
+          ${SORT_OPTIONS.map(option => `<option value="${esc(option.key)}" ${sortKey === option.key ? "selected" : ""}>${esc(option.label)}</option>`).join("")}
+        </select>
+      </label>
+      <div class="sort-direction-group" role="radiogroup" aria-label="Sort direction">
+        <label class="sort-direction ${sortDir === "asc" ? "is-selected" : ""}">
+          <input type="radio" name="sort-direction" value="asc" ${sortDir === "asc" ? "checked" : ""} />
+          <span>Ascending</span>
+          <em>↑</em>
+        </label>
+        <label class="sort-direction ${sortDir === "desc" ? "is-selected" : ""}">
+          <input type="radio" name="sort-direction" value="desc" ${sortDir === "desc" ? "checked" : ""} />
+          <span>Descending</span>
+          <em>↓</em>
+        </label>
+      </div>
+      <div class="toolbar-panel__actions">
+        <button type="button" class="toolbar-secondary-btn" data-clear-sort>Clear sort</button>
+        <button type="button" class="toolbar-primary-btn" data-close-toolbar>Done</button>
+      </div>
+    </div>
+  `;
+}
+
+function getSortLabel(key) {
+  const option = SORT_OPTIONS.find(item => item.key === key);
+  if (option) return option.label;
+  const column = COLUMNS.find(col => col.key === key);
+  return column ? column.label : key;
+}
+
+function toggleToolbarPanel(panelName) {
+  activeToolbarPanel = activeToolbarPanel === panelName ? null : panelName;
+  renderToolbarPanels();
+}
+
+function closeToolbarPanels() {
+  activeToolbarPanel = null;
+  renderToolbarPanels();
+}
+
+function renderToolbarPanels() {
+  renderFilterPanel();
+  renderSortPanel();
+
+  const filterPanel = document.getElementById("filter-panel");
+  const sortPanel = document.getElementById("sort-panel");
+
+  if (filterPanel) filterPanel.hidden = activeToolbarPanel !== "filter";
+  if (sortPanel) sortPanel.hidden = activeToolbarPanel !== "sort";
+
+  updateToolbarButtons();
+}
+
+function updateToolbarButtons() {
+  const filterBtn = document.getElementById("btn-filter");
+  const sortBtn = document.getElementById("btn-sort");
+  const activeFilterCount = countActiveFilters();
+
+  if (filterBtn) {
+    filterBtn.classList.toggle("is-active", activeFilterCount > 0 || activeToolbarPanel === "filter");
+    filterBtn.dataset.count = activeFilterCount > 0 ? String(activeFilterCount) : "";
+    filterBtn.setAttribute("aria-expanded", String(activeToolbarPanel === "filter"));
+  }
+
+  if (sortBtn) {
+    sortBtn.classList.toggle("is-active", Boolean(sortKey) || activeToolbarPanel === "sort");
+    sortBtn.dataset.count = sortKey ? (sortDir === "asc" ? "↑" : "↓") : "";
+    sortBtn.setAttribute("aria-expanded", String(activeToolbarPanel === "sort"));
+  }
+}
+
+function initToolbarPanels() {
+  const filterBtn = document.getElementById("btn-filter");
+  const sortBtn = document.getElementById("btn-sort");
+  const filterPanel = document.getElementById("filter-panel");
+  const sortPanel = document.getElementById("sort-panel");
+
+  if (filterBtn) {
+    filterBtn.addEventListener("click", e => {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleToolbarPanel("filter");
+    });
+  }
+
+  if (sortBtn) {
+    sortBtn.addEventListener("click", e => {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleToolbarPanel("sort");
+    });
+  }
+
+  if (filterPanel) {
+    filterPanel.addEventListener("change", e => {
+      const checkbox = e.target.closest("input[data-filter-name]");
+      if (checkbox) {
+        const filterName = checkbox.dataset.filterName;
+        const value = checkbox.value;
+        checkbox.checked ? activeFilters[filterName].add(value) : activeFilters[filterName].delete(value);
+        applyCurrentFiltersAndRender();
+        renderFilterPanel();
+        return;
+      }
+
+      if (e.target.id === "filter-deadline-mode") {
+        activeFilters.deadlineMode = e.target.value || "all";
+        applyCurrentFiltersAndRender();
+        renderFilterPanel();
+        return;
+      }
+
+      if (e.target.id === "filter-date-from") {
+        activeFilters.dateFrom = e.target.value || "";
+        applyCurrentFiltersAndRender();
+        renderFilterPanel();
+        return;
+      }
+
+      if (e.target.id === "filter-date-to") {
+        activeFilters.dateTo = e.target.value || "";
+        applyCurrentFiltersAndRender();
+        renderFilterPanel();
+      }
+    });
+
+    filterPanel.addEventListener("click", e => {
+      const remove = e.target.closest("[data-remove-filter]");
+      if (remove) {
+        e.preventDefault();
+        const filterName = remove.dataset.removeFilter;
+        const value = remove.dataset.value;
+        if (activeFilters[filterName]) activeFilters[filterName].delete(value);
+        applyCurrentFiltersAndRender();
+        renderFilterPanel();
+        return;
+      }
+
+      const deadlineMode = e.target.closest("[data-deadline-mode]");
+      if (deadlineMode) {
+        e.preventDefault();
+        activeFilters.deadlineMode = deadlineMode.dataset.deadlineMode || "all";
+        applyCurrentFiltersAndRender();
+        renderFilterPanel();
+        return;
+      }
+
+      const clearDate = e.target.closest("[data-clear-date]");
+      if (clearDate) {
+        e.preventDefault();
+        if (clearDate.dataset.clearDate === "from") activeFilters.dateFrom = "";
+        if (clearDate.dataset.clearDate === "to") activeFilters.dateTo = "";
+        applyCurrentFiltersAndRender();
+        renderFilterPanel();
+        return;
+      }
+
+      if (e.target.closest("[data-clear-filters]")) {
+        e.preventDefault();
+        clearFilters();
+        return;
+      }
+
+      if (e.target.closest("[data-close-toolbar]")) {
+        e.preventDefault();
+        closeToolbarPanels();
+      }
+    });
+  }
+
+  if (sortPanel) {
+    sortPanel.addEventListener("change", e => {
+      if (e.target.id === "sort-field") {
+        setSort(e.target.value, sortDir);
+        return;
+      }
+
+      if (e.target.name === "sort-direction") {
+        setSort(sortKey, e.target.value);
+      }
+    });
+
+    sortPanel.addEventListener("click", e => {
+      if (e.target.closest("[data-clear-sort]")) {
+        e.preventDefault();
+        clearSort();
+        return;
+      }
+
+      if (e.target.closest("[data-close-toolbar]")) {
+        e.preventDefault();
+        closeToolbarPanels();
+      }
+    });
+  }
+
+  document.addEventListener("click", e => {
+    if (!activeToolbarPanel) return;
+    if (e.target.closest("#filter-panel, #sort-panel, #btn-filter, #btn-sort")) return;
+    closeToolbarPanels();
+  });
+
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape" && activeToolbarPanel) closeToolbarPanels();
+  });
+
+  renderToolbarPanels();
+}
 
 // ─── Calendar View ─────────────────────────────────────────────────────────
 function initCalendarView() {
@@ -1590,6 +2250,7 @@ function getCalendarItems() {
 
 function rowMatchesCalendarFilters(row, q) {
   if (q && !rowMatchesSearch(row, q)) return false;
+  if (!rowMatchesActiveFilters(row)) return false;
   if (calendarSpecialistFilter === "all") return true;
   return splitMulti(row["Specialists"]).some(name => name === calendarSpecialistFilter);
 }
@@ -2182,6 +2843,7 @@ function showToast(message, type = "success") {
 document.addEventListener("DOMContentLoaded", () => {
   initTabs();
   initToolbar();
+  initToolbarPanels();
   initInlineEditing();
   initSubitemInteractions();
   initSelectionInteractions();

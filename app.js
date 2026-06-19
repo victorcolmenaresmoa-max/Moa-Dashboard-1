@@ -2726,8 +2726,20 @@ function initSubmitForm() {
     row["Brief Description"] = String(formData.get("Brief Description") || "").trim();
     row["Estado"] = "Not started";
 
-    const deadlineRaw = String(formData.get("Deadline 1") || "").trim();
-    row["Deadline 1"] = deadlineRaw ? formatDateForDisplay(deadlineRaw) : "";
+    const startRaw = String(formData.get("Fecha de inicio") || "").trim();
+    const endRaw = String(formData.get("Fecha final") || "").trim();
+    if (startRaw && endRaw) {
+      row["Fecha de Inicio y Fin"] = `${formatDateForDisplay(startRaw)} – ${formatDateForDisplay(endRaw)}`;
+    } else if (startRaw) {
+      row["Fecha de Inicio y Fin"] = formatDateForDisplay(startRaw);
+    } else {
+      row["Fecha de Inicio y Fin"] = "";
+    }
+
+    ["Deadline 1", "Deadline 2", "Deadline 3", "Deadline 4"].forEach(key => {
+      const raw = String(formData.get(key) || "").trim();
+      row[key] = raw ? formatDateForDisplay(raw) : "";
+    });
 
     const ok = await postRow(row);
 

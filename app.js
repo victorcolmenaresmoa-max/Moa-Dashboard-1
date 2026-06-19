@@ -2247,7 +2247,7 @@ function getCalendarItems() {
         endDate: null,
         type: "deadline",
         dateKey: key,
-        label: `D${index + 1}`,
+        label: `Deadline ${index + 1}`,
         title,
         specialists: splitMulti(row["Specialists"]),
         status: row["Estado"] || "Not started"
@@ -2256,16 +2256,30 @@ function getCalendarItems() {
 
     const [startText, endText] = parseDateRange(row["Fecha de Inicio y Fin"] || "");
     const startDate = parseFlexibleDate(startText);
-    const endDate = parseFlexibleDate(endText) || startDate;
+    const endDate = parseFlexibleDate(endText);
 
     if (startDate && startDate >= visibleStart && startDate <= visibleEnd) {
       items.push({
         row,
         date: startDate,
-        endDate,
+        endDate: null,
         type: "workflow",
         dateKey: "Fecha de Inicio y Fin",
-        label: "Flow",
+        label: "Inicio",
+        title,
+        specialists: splitMulti(row["Specialists"]),
+        status: row["Estado"] || "Not started"
+      });
+    }
+
+    if (endDate && endDate >= visibleStart && endDate <= visibleEnd) {
+      items.push({
+        row,
+        date: endDate,
+        endDate: null,
+        type: "workflow",
+        dateKey: "Fecha de Inicio y Fin",
+        label: "Fin",
         title,
         specialists: splitMulti(row["Specialists"]),
         status: row["Estado"] || "Not started"
@@ -2319,15 +2333,13 @@ function renderCalendarDay(day, items) {
 
 function renderCalendarCard(item) {
   const status = getEstadoSlug(item.status);
-  const dateText = item.type === "workflow" && item.endDate
-    ? `${formatCalendarDate(item.date)} → ${formatCalendarDate(item.endDate)}`
-    : formatCalendarDate(item.date);
+  const dateText = formatCalendarDate(item.date);
   const people = item.specialists.length ? item.specialists.join(", ") : "No specialist assigned";
   const isSub = isSubitem(item.row);
 
   return `
-    <button type="button" class="calendar-card calendar-card--${status} ${isSub ? "calendar-card--subitem" : ""}" data-calendar-row="${esc(item.row.__clientKey)}" title="${esc(item.title)} · ${esc(people)} · ${esc(dateText)}">
-      <span class="calendar-card__meta"><b>${esc(item.label)}</b>${esc(dateText)}</span>
+    <button type="button" class="calendar-card calendar-card--${status} ${isSub ? "calendar-card--subitem" : ""}" data-calendar-row="${esc(item.row.__clientKey)}" title="${esc(item.title)} · ${esc(people)} · ${esc(item.label)} · ${esc(dateText)}">
+      <span class="calendar-card__meta"><b>${esc(item.label)}</b><span>${esc(dateText)}</span></span>
       <span class="calendar-card__title">${isSub ? "↳ " : ""}${esc(item.title)}</span>
       <span class="calendar-card__people">${esc(people)}</span>
     </button>

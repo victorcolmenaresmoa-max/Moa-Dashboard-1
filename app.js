@@ -1105,21 +1105,26 @@ function slugify(value) {
 }
 
 // ─── Inline editing ─────────────────────────────────────────────────────────
+// IMPORTANT: this listener is attached ONCE to the parent <tbody> (event
+// delegation). We never attach listeners to individual .editable-cell
+// elements, since those are destroyed/recreated on every renderTable() call.
 function initInlineEditing() {
   const tbody = document.getElementById("table-body");
 
-  tbody.addEventListener("pointerdown", e => {
+  tbody.addEventListener("click", e => {
+    // Let dedicated controls (row selector, subitem buttons, the create-
+    // subitem input, etc.) handle their own clicks.
     if (e.target.closest("[data-row-select], [data-toggle-subitems], [data-start-subitem], [data-save-subitem], [data-cancel-subitem], .subitem-create-input")) return;
 
     const td = e.target.closest("td.editable-cell");
-    if (!td || e.target.closest(".inline-editor")) return;
+    if (!td) return;
 
-    e.preventDefault();
-    e.stopPropagation();
+    // Clicked inside a cell that's already in edit mode (e.g. on its
+    // save/cancel buttons or an input) — those have their own handlers,
+    // so do nothing here to avoid reopening/clobbering the active editor.
+    if (td.classList.contains("editing") || e.target.closest(".inline-editor")) return;
 
-    const row = getRowByClientKey(td.dataset.rowKey);
-    if (!row) return;
-    openEditor(td, row, td.dataset.key, td.dataset.type);
+    openEditor(td.dataset.rowKey, td.dataset.key, td.dataset.type);
   });
 
   document.addEventListener("keydown", e => {
@@ -1198,10 +1203,28 @@ function initSubitemInteractions() {
   });
 }
 
-function openEditor(td, row, key, type) {
-  if (activeEditor) renderTable(filteredData);
+function openEditor(rowKey, key, type) {
+  // If another cell is currently being edited, close it first. This
+  // re-renders the table, which destroys and recreates every <td>.
+  if (activeEditor) {
+    activeEditor = null;
+    renderTable(filteredData);
+  }
 
-  activeEditor = { td, row, key };
+  const row = getRowByClientKey(rowKey);
+  if (!row) return;
+
+  // Always grab a FRESH reference to the cell from the live DOM, taken
+  // AFTER the render above. Reusing a <td> captured before that render
+  // (the old bug) points at a detached node that's no longer on screen,
+  // so the edits silently went nowhere — this is what made clicking feel
+  // unresponsive after the first cell was opened.
+  const td = document.querySelector(
+    `td.editable-cell[data-row-key="${cssEscape(rowKey)}"][data-key="${cssEscape(key)}"]`
+  );
+  if (!td) return;
+
+  activeEditor = { rowKey, key };
   const value = row[key] || "";
   td.classList.add("editing");
   td.innerHTML = getEditorHTML(value, type, key);
@@ -1231,6 +1254,9 @@ function openEditor(td, row, key, type) {
 
   const firstInput = td.querySelector("input, textarea");
   if (firstInput) {
+    // Focus is set synchronously, right after the editor markup is
+    // inserted, so there's no intermediate blur/focus flicker that could
+    // re-trigger the delegated click handler or close the editor early.
     firstInput.focus();
     if (firstInput.select) firstInput.select();
   }
@@ -1271,6 +1297,12 @@ function openEditor(td, row, key, type) {
       }
     });
   });
+}
+
+// Minimal CSS.escape fallback for environments where it's unavailable.
+function cssEscape(value) {
+  if (window.CSS && typeof CSS.escape === "function") return CSS.escape(value);
+  return String(value).replace(/[^a-zA-Z0-9_-]/g, "\\$&");
 }
 
 function getEditorHTML(value, type, key) {

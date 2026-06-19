@@ -1878,18 +1878,28 @@ max-width: 250px !important;
 .calendar-card__meta {
   display: flex;
   align-items: center;
-  gap: 5px;
+  flex-wrap: wrap;
+  gap: 4px 5px;
   color: var(--text-secondary);
   font-size: 10.5px;
   line-height: 1.2;
 }
 
 .calendar-card__meta b {
+  flex-shrink: 0;
+  white-space: nowrap;
   padding: 1px 5px;
   border-radius: 999px;
   background: var(--moa-soft);
   color: var(--moa-deep);
   font-size: 10px;
+}
+
+.calendar-card__meta > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .calendar-card__title {
@@ -1958,7 +1968,7 @@ max-width: 250px !important;
 
 .deadline-card {
   display: grid;
-  grid-template-columns: 72px 1fr;
+  grid-template-columns: 88px 1fr;
   gap: 10px;
   padding: 10px;
 }
@@ -1977,6 +1987,10 @@ max-width: 250px !important;
 
 .deadline-card__date span {
   width: fit-content;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   padding: 2px 6px;
   border-radius: 999px;
   background: var(--moa-soft);

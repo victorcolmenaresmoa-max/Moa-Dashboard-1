@@ -2237,6 +2237,11 @@ function getCalendarItems() {
     const title = String(row["TASKS"] || "Untitled").trim();
     if (!title) return;
 
+    // A parent task that already has sub-items should not appear on the calendar
+    // itself — only its sub-items should render, to avoid duplicate cards on the
+    // same dates. Standalone tasks (no sub-items) still render as before.
+    if (!isSubitem(row) && getSubitemsForParent(row).length > 0) return;
+
     ["Deadline 1", "Deadline 2", "Deadline 3", "Deadline 4"].forEach((key, index) => {
       const date = parseFlexibleDate(row[key]);
       if (!date) return;

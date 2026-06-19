@@ -530,6 +530,10 @@ html, body {
   gap: 16px;
 }
 
+.form-row--deadlines {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
 .form-group--full { grid-column: 1 / -1; }
 
 .moa-task-form .form-group { margin-bottom: 18px; }

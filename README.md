@@ -1,104 +1,156 @@
-# 👁️ Specialists Dashboard
+# MOA Specialists Dashboard — v2 (Auth + RBAC)
 
-Dashboard estilo Notion para gestión de tareas de especialistas, con conexión a Google Sheets via SheetDB.
+Dashboard de gestión de tareas para el equipo de MOA Education.  
+Esta versión agrega **Google OAuth**, **RBAC por roles**, y un **proxy seguro** para SheetDB.
 
 ---
 
-## 📁 Estructura de archivos
+## Arquitectura
 
 ```
-specialists-dashboard/
-├── index.html    ← Estructura HTML
-├── styles.css    ← Estilos Notion-like
-├── app.js        ← Lógica JS + conexión SheetDB
-└── README.md     ← Este archivo
+Browser
+  │
+  ├── GET  /            → public/index.html  (SPA estática)
+  ├── GET  /api/auth/login     → redirige a Google
+  ├── GET  /api/auth/callback  → intercambia código, setea cookie
+  ├── GET  /api/auth/logout    → borra cookie
+  ├── GET  /api/auth/me        → devuelve usuario actual
+  ├── GET  /api/data           → proxy GET SheetDB (autenticado)
+  ├── POST /api/data/create    → proxy POST SheetDB (autenticado)
+  ├── PATCH /api/data/update   → proxy PATCH SheetDB (RBAC server-side)
+  └── DELETE /api/data/delete  → proxy DELETE SheetDB (solo admin)
+```
+
+Las credenciales de SheetDB **nunca llegan al navegador**.  
+El RBAC se aplica tanto en el cliente (UX) como en el servidor (seguridad real).
+
+---
+
+## 1. Google Cloud — Crear credenciales OAuth
+
+1. Ve a [console.cloud.google.com](https://console.cloud.google.com) → **APIs & Services** → **Credentials**.
+2. Crea un proyecto nuevo o usa uno existente.
+3. Haz clic en **+ Create Credentials** → **OAuth client ID**.
+4. Tipo de aplicación: **Web application**.
+5. En **Authorized redirect URIs** agrega:
+   - `https://TU-PROYECTO.vercel.app/api/auth/callback`
+   - `http://localhost:3000/api/auth/callback` (para desarrollo local)
+6. Copia el **Client ID** y el **Client Secret**.
+
+> Si tu organización usa Google Workspace, considera activar la restricción de dominio con `GOOGLE_ALLOWED_DOMAIN`.
+
+---
+
+## 2. Variables de entorno en Vercel
+
+En el dashboard de Vercel → tu proyecto → **Settings** → **Environment Variables**:
+
+| Variable | Valor |
+|---|---|
+| `GOOGLE_CLIENT_ID` | El Client ID de Google |
+| `GOOGLE_CLIENT_SECRET` | El Client Secret de Google |
+| `NEXT_PUBLIC_BASE_URL` | `https://tu-proyecto.vercel.app` |
+| `GOOGLE_ALLOWED_DOMAIN` | `moaeducation.com` (o vacío para cualquier cuenta) |
+| `SESSION_SECRET` | String aleatorio 32+ chars (`openssl rand -base64 32`) |
+| `SHEETDB_URL` | `https://sheetdb.io/api/v1/TU_ID` |
+| `ADMIN_EMAILS` | `victor.colmenares@moaeducation.com,luis.sumoza@moaeducation.com` |
+| `SPECIALIST_EMAILS` | Lista separada por comas de todos los especialistas |
+
+**Copia `.env.example` a `.env.local`** para desarrollo local. Nunca hagas commit de `.env.local`.
+
+---
+
+## 3. Mapeo email → columna de Google Sheets
+
+En `api/auth/callback.js`, la función `getSpecialistKey()` mapea el email de Google Workspace al nombre exacto de la columna en la hoja.  
+**Actualiza este mapeo si cambian los emails del equipo.**
+
+```js
+function getSpecialistKey(email) {
+  const map = {
+    "victor.colmenares@moaeducation.com":  "Victor Colmenares",
+    "luis.sumoza@moaeducation.com":        "Dirección Académica",
+    "roxangel.rodriguez@moaeducation.com": "Roxangel Rodriguez",
+    // ...
+  };
+  return map[email.toLowerCase()] || null;
+}
 ```
 
 ---
 
-## 🗂️ Columnas requeridas en Google Sheets
+## 4. Despliegue en Vercel
 
-Crea una hoja de cálculo con exactamente estas columnas (en la **fila 1**, respetando mayúsculas/minúsculas y tildes):
+```bash
+# Instala la CLI de Vercel (una sola vez)
+npm i -g vercel
 
-| # | Nombre de la columna          |
-|---|-------------------------------|
-| 1 | Tipo de trabajo               |
-| 2 | TASKS                         |
-| 3 | Vertical                      |
-| 4 | Brief Description             |
-| 5 | Specialists                   |
-| 6 | Fecha de Inicio y Fin         |
-| 7 | Estado                        |
-| 8 | Calidad                       |
-| 9 | Rondas de revisión            |
-| 10| Comments                      |
-| 11| Deadline 1                    |
-| 12| Deadline 2                    |
-| 13| Deadline 3                    |
-| 14| Deadline 4                    |
-| 15| Noryley                       |
-| 16| Roxangel                      |
-| 17| Ailil                         |
-| 18| Asdrubal                      |
-| 19| Norilys                       |
-| 20| Victor                        |
-| 21| Melisa                        |
-| 22| AI Summary                    |
+# Desde la carpeta del proyecto:
+vercel deploy --prod
+```
+
+O conecta el repositorio en [vercel.com](https://vercel.com) para despliegue automático en cada push a `main`.
 
 ---
 
-## ⚙️ Conectar SheetDB
+## 5. Desarrollo local
 
-1. Ve a [sheetdb.io](https://sheetdb.io) y crea una cuenta.
-2. Conecta tu Google Sheet y copia la URL de la API (ej: `https://sheetdb.io/api/v1/abc123xyz`).
-3. Abre `app.js` y reemplaza la línea 5:
-   ```js
-   const SHEETDB_URL = "https://sheetdb.io/api/v1/TU_ID_AQUI";
-   ```
+```bash
+npm install
+cp .env.example .env.local
+# Edita .env.local con tus valores
 
----
-
-## 🚀 Despliegue en Vercel
-
-1. Sube los 3 archivos (`index.html`, `styles.css`, `app.js`) a un repositorio GitHub.
-2. Ve a [vercel.com](https://vercel.com), importa el repositorio.
-3. En la configuración del proyecto:
-   - **Framework Preset:** Other
-   - **Output Directory:** `.` (raíz del proyecto)
-4. Haz clic en **Deploy** — listo.
+vercel dev
+# El dashboard estará en http://localhost:3000
+```
 
 ---
 
-## 🏷️ Valores válidos por columna
+## Reglas de negocio RBAC
 
-### Tipo de trabajo
-- `PROJECT`
-- `PERPETUAL`
-- `ON-DEMAND`
+### Administradores (`ADMIN_EMAILS`)
+Victor Colmenares y Luis Fernando Sumoza (Dirección Académica)
 
-### Vertical
-- `Academy`
-- `School`
-- `E-MOA`
-- `Afterschool`
-- `In-Company`
+- Acceso total de lectura y edición en todas las columnas.
+- **Exclusivo**: son los únicos que pueden establecer **Calidad = "Revisado y aprobado"**.
+- **Exclusivo**: son los únicos que pueden modificar los **Deadline 1–4**.
+- Pueden eliminar tareas desde la vista Backlog.
 
-### Estado
-- `Not started`
-- `In progress`
-- `Stand By`
-- `Blocked`
-- `Done`
-- `Delayed Done`
+### Especialistas (`SPECIALIST_EMAILS`)
+Resto del equipo
 
-### Calidad
-- `Revisado y aprobado`
-- `En revisión por especialistas`
-- `Sin revisión de otros especialistas`
-- `Pendiente de revisión`
+- Solo pueden editar la celda de notas de **su propia columna** personal.
+- Solo pueden cambiar el campo **Estado** en tareas donde su nombre aparece en la columna **Specialists**.
+- No pueden tocar Deadlines ni aprobar en Calidad.
+- No pueden eliminar tareas.
+
+> Las reglas se aplican **en el servidor** (`api/data/update.js`). El frontend solo las refleja en la UI como feedback inmediato.
 
 ---
 
-## 💡 Mientras no configures SheetDB
+## Estructura de archivos
 
-El dashboard muestra 5 registros de prueba automáticamente hasta que coloques la URL real.
+```
+moa-dashboard/
+├── api/
+│   ├── auth/
+│   │   ├── callback.js   ← OAuth callback, asigna rol
+│   │   ├── login.js      ← Redirige a Google
+│   │   ├── logout.js     ← Borra cookie
+│   │   └── me.js         ← Devuelve usuario autenticado
+│   └── data/
+│       ├── index.js      ← GET  /api/data
+│       ├── create.js     ← POST /api/data/create
+│       ├── update.js     ← PATCH /api/data/update  (RBAC aquí)
+│       └── delete.js     ← DELETE /api/data/delete (solo admin)
+├── lib/
+│   └── session.js        ← Firma y verifica cookies con HMAC-SHA256
+├── public/
+│   ├── index.html        ← SPA principal
+│   ├── app.js            ← Lógica del dashboard (auth-aware)
+│   └── styles.css        ← Estilos
+├── .env.example          ← Plantilla de variables de entorno
+├── package.json
+├── vercel.json           ← Rutas y configuración de Vercel
+└── README.md
+```

@@ -1,11 +1,24 @@
 // ==============================================
 //  SPECIALISTS DASHBOARD — app.js
-//  Sub-items version
-//  IMPORTANT: For sub-items to persist in Google Sheets,
-//  add this exact column header to your sheet: Parent ID
+//  Production build: Google OAuth + RBAC
+//  All SheetDB calls go through /api/data/* (server-side proxy)
+//  Authentication state is loaded from /api/auth/me on boot
 // ==============================================
 
-const SHEETDB_URL = "https://sheetdb.io/api/v1/x5jcywsg1m518";
+// API base paths — all server-side, credentials never reach the browser
+const API_BASE    = "/api/data";
+const API_CREATE  = "/api/data/create";
+const API_UPDATE  = "/api/data/update";
+const API_DELETE  = "/api/data/delete";
+
+// ─── Auth state (populated by initAuth on boot) ──────────────────────────────
+let currentUser = null;
+// currentUser shape: { email, name, picture, role, specialistKey }
+// role: "admin" | "specialist"
+
+function isAdmin() { return currentUser?.role === "admin"; }
+function isSpecialist() { return currentUser?.role === "specialist"; }
+function getMySpecialistKey() { return currentUser?.specialistKey || null; }
 const PARENT_ID_KEY = "Parent ID";
 const OPEN_SUBITEMS_STORAGE_KEY = "moa-dashboard-open-subitems-v1";
 
@@ -316,7 +329,7 @@ function createEmptyFilters() {
   };
 }
 
-// ─── Fetch from SheetDB ─────────────────────────────────────────────────────
+// ─── Fetch from server proxy ─────────────────────────────────────────────────
 async function fetchData() {
   const loading = document.getElementById("loading-state");
   const errorEl = document.getElementById("error-state");
@@ -326,18 +339,14 @@ async function fetchData() {
   errorEl.style.display = "none";
   table.style.display = "none";
 
-  if (SHEETDB_URL.includes("YOUR_SHEETDB_ID_HERE")) {
-    allData = normalizeRows(SEED_DATA);
-    filteredData = [...allData];
-    loading.style.display = "none";
-    applyCurrentFiltersAndRender();
-    return;
-  }
-
   try {
-    const res = await fetch(SHEETDB_URL, {
-      headers: { "Content-Type": "application/json" }
-    });
+    const res = await fetch(API_BASE, { credentials: "same-origin" });
+
+    if (res.status === 401) {
+      // Session expired mid-session — redirect to login
+      window.location.href = "/api/auth/login";
+      return;
+    }
 
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
@@ -350,7 +359,7 @@ async function fetchData() {
     loading.style.display = "none";
     applyCurrentFiltersAndRender();
   } catch (err) {
-    console.error("SheetDB error:", err);
+    console.error("Data fetch error:", err);
     loading.style.display = "none";
     errorEl.style.display = "flex";
   }
@@ -412,11 +421,11 @@ function hasVisibleRowData(row) {
   return COLUMNS.some(col => String(row[col.key] || "").trim() !== "");
 }
 
-// ─── POST new row to SheetDB ────────────────────────────────────────────────
+// ─── POST new row via server proxy ──────────────────────────────────────────
 async function postRow(rowData, options = {}) {
   const cleanRow = { ...makeEmptySheetRow(), ...rowData };
   const successMessage = options.successMessage || "Tarea guardada correctamente.";
-  const errorMessage = options.errorMessage || "No se pudo guardar. Revisa SheetDB, permisos, encabezados y la columna Parent ID.";
+  const errorMessage = options.errorMessage || "No se pudo guardar. Revisa los encabezados y la columna Parent ID.";
 
   if (!cleanRow.ID) cleanRow.ID = createId();
 
@@ -433,22 +442,16 @@ async function postRow(rowData, options = {}) {
     applyCurrentFiltersAndRender();
   }
 
-  if (SHEETDB_URL.includes("YOUR_SHEETDB_ID_HERE")) {
-    showToast(successMessage, "success");
-    return true;
-  }
-
   try {
-    const res = await fetch(SHEETDB_URL, {
+    const res = await fetch(API_CREATE, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ data: [sheetPayload] })
+      credentials: "same-origin",
+      body: JSON.stringify({ data: sheetPayload })
     });
 
-    const responseText = await res.text();
-    console.log("SheetDB POST response:", responseText);
-
-    if (!res.ok) throw new Error(`HTTP ${res.status}: ${responseText}`);
+    if (res.status === 401) { window.location.href = "/api/auth/login"; return false; }
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
     showToast(successMessage, "success");
     return true;
@@ -462,9 +465,16 @@ async function postRow(rowData, options = {}) {
   }
 }
 
-// ─── PATCH one cell to SheetDB ──────────────────────────────────────────────
+// ─── PATCH one cell via server proxy (RBAC enforced server-side) ────────────
 async function patchCell(row, key, newValue, options = {}) {
   if (!row) return false;
+
+  // ── Client-side RBAC pre-check (UX only — server enforces the real rules) ──
+  const clientCheck = clientCanEdit(row, key, newValue);
+  if (!clientCheck.allowed) {
+    showToast(clientCheck.reason, "error");
+    return false;
+  }
 
   const oldValue = row[key] || "";
   const taskName = String(row["TASKS"] || row.__originalTaskName || "").trim();
@@ -481,23 +491,34 @@ async function patchCell(row, key, newValue, options = {}) {
   if (key === "ID") row.__clientKey = row.__clientKey || newValue;
   applyCurrentFiltersAndRender();
 
-  if (SHEETDB_URL.includes("YOUR_SHEETDB_ID_HERE")) {
-    if (!options.silent) showToast("Guardado", "success");
-    return true;
-  }
-
   const matchColumn = idValue ? "ID" : "TASKS";
   const matchValue = idValue || row.__originalTaskName || taskName;
 
   try {
-    const res = await fetch(`${SHEETDB_URL}/${encodeURIComponent(matchColumn)}/${encodeURIComponent(matchValue)}`, {
+    const res = await fetch(API_UPDATE, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ data: { [key]: newValue } })
+      credentials: "same-origin",
+      body: JSON.stringify({
+        matchColumn,
+        matchValue,
+        key,
+        value: newValue,
+        taskSpecialists: row["Specialists"] || "" // sent so server can validate Estado changes
+      })
     });
 
-    const responseText = await res.text();
-    if (!res.ok) throw new Error(`HTTP ${res.status}: ${responseText}`);
+    if (res.status === 401) { window.location.href = "/api/auth/login"; return false; }
+
+    if (res.status === 403) {
+      const body = await res.json();
+      row[key] = oldValue;
+      applyCurrentFiltersAndRender();
+      showToast(body.error || "No tienes permiso para editar este campo.", "error");
+      return false;
+    }
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
     if (key === "TASKS") row.__originalTaskName = newValue;
     if (!options.silent) showToast("Guardado", "success");
@@ -506,9 +527,40 @@ async function patchCell(row, key, newValue, options = {}) {
     console.error("PATCH error:", err);
     row[key] = oldValue;
     applyCurrentFiltersAndRender();
-    showToast("No se pudo guardar el cambio. Revisa SheetDB y la columna ID.", "error");
+    showToast("No se pudo guardar el cambio.", "error");
     return false;
   }
+}
+
+/**
+ * Client-side RBAC pre-check — mirrors the server logic for instant UX feedback.
+ * The server always re-validates, so this is defense-in-depth only.
+ */
+function clientCanEdit(row, key, newValue) {
+  if (!currentUser) return { allowed: false, reason: "No autenticado." };
+
+  const DEADLINE_KEYS = ["Deadline 1", "Deadline 2", "Deadline 3", "Deadline 4"];
+
+  if (isAdmin()) return { allowed: true };
+
+  // Specialist rules
+  if (key === "Calidad" && newValue === "Revisado y aprobado") {
+    return { allowed: false, reason: "Solo los administradores pueden marcar 'Revisado y aprobado'." };
+  }
+  if (DEADLINE_KEYS.includes(key)) {
+    return { allowed: false, reason: "Solo los administradores pueden modificar los Deadlines principales." };
+  }
+
+  const myKey = getMySpecialistKey();
+  if (myKey && key === myKey) return { allowed: true }; // own note column
+
+  if (key === "Estado") {
+    const assigned = (row["Specialists"] || "").split(",").map(s => s.trim().toLowerCase());
+    if (myKey && assigned.includes(myKey.toLowerCase())) return { allowed: true };
+    return { allowed: false, reason: "Solo puedes cambiar el Estado en las tareas en las que estás asignado/a." };
+  }
+
+  return { allowed: false, reason: "No tienes permiso para editar este campo." };
 }
 
 async function ensureRowId(row) {
@@ -702,6 +754,11 @@ function getRowsToDeleteFromSelection() {
 }
 
 async function deleteSelectedRows() {
+  if (!isAdmin()) {
+    showToast("Solo los administradores pueden eliminar tareas.", "error");
+    return;
+  }
+
   const selectedRows = getSelectedRows();
   const rowsToDelete = getRowsToDeleteFromSelection();
 
@@ -723,11 +780,6 @@ async function deleteSelectedRows() {
   activeEditor = null;
   activeSubitemParentKey = null;
   applyCurrentFiltersAndRender();
-
-  if (SHEETDB_URL.includes("YOUR_SHEETDB_ID_HERE")) {
-    showToast("Tarea movida a la papelera.", "success");
-    return;
-  }
 
   try {
     for (const row of rowsToDelete) {
@@ -751,15 +803,19 @@ async function deleteRowFromSheet(row) {
 
   if (!matchValue) return;
 
-  const res = await fetch(`${SHEETDB_URL}/${encodeURIComponent(matchColumn)}/${encodeURIComponent(matchValue)}`, {
+  const res = await fetch(API_DELETE, {
     method: "DELETE",
-    headers: { "Content-Type": "application/json" }
+    headers: { "Content-Type": "application/json" },
+    credentials: "same-origin",
+    body: JSON.stringify({ matchColumn, matchValue })
   });
 
-  const responseText = await res.text();
-  console.log("SheetDB DELETE response:", responseText);
-
-  if (!res.ok) throw new Error(`HTTP ${res.status}: ${responseText}`);
+  if (res.status === 401) { window.location.href = "/api/auth/login"; return; }
+  if (res.status === 403) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error || "Sin permiso para eliminar.");
+  }
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
 }
 
 function initSelectionInteractions() {
@@ -864,6 +920,7 @@ function renderTable(data) {
   table.style.display = "table";
   syncSelectedRowsWithData();
   updateSelectionToolbar();
+  applyRbacToTable();
 }
 
 function createTableRow(row, meta) {
@@ -2900,8 +2957,192 @@ function showToast(message, type = "success") {
   }, 2800);
 }
 
+// ─── Auth init ───────────────────────────────────────────────────────────────
+async function initAuth() {
+  try {
+    const res = await fetch("/api/auth/me", { credentials: "same-origin" });
+
+    if (res.status === 401) {
+      // Not logged in — show login screen
+      renderLoginScreen();
+      return false;
+    }
+
+    if (!res.ok) throw new Error(`Auth check failed: ${res.status}`);
+
+    currentUser = await res.json();
+    renderUserBadge(currentUser);
+    return true;
+  } catch (err) {
+    console.error("Auth init error:", err);
+    renderLoginScreen();
+    return false;
+  }
+}
+
+function renderLoginScreen() {
+  document.body.innerHTML = `
+    <div style="
+      min-height:100vh;display:flex;align-items:center;justify-content:center;
+      background:#f7f6f3;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    ">
+      <div style="
+        background:#fff;border:1px solid #e9e9e7;border-radius:12px;
+        padding:48px 40px;max-width:380px;width:100%;text-align:center;
+        box-shadow:0 4px 24px rgba(0,0,0,0.07);
+      ">
+        <div style="font-size:36px;margin-bottom:16px;">🎓</div>
+        <h1 style="font-size:22px;font-weight:700;color:#37352f;margin-bottom:6px;">
+          Specialists Dashboard
+        </h1>
+        <p style="color:#787774;font-size:14px;margin-bottom:32px;">
+          MOA Education · Acceso restringido al equipo
+        </p>
+        <a href="/api/auth/login" style="
+          display:inline-flex;align-items:center;gap:10px;
+          padding:12px 24px;border-radius:8px;text-decoration:none;
+          background:#4285f4;color:#fff;font-size:14px;font-weight:600;
+          box-shadow:0 2px 8px rgba(66,133,244,0.3);
+          transition:background 0.15s;
+        ">
+          <svg width="18" height="18" viewBox="0 0 48 48">
+            <path fill="#FFF" d="M43.6 20H24v8.4h11.1C33.8 33.7 29.4 37 24 37c-7.2 0-13-5.8-13-13s5.8-13 13-13c3.1 0 5.9 1.1 8.1 2.9l6.1-6.1C34.6 5.1 29.6 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21c10.9 0 20-7.9 20-21 0-1.3-.1-2.7-.4-4z"/>
+          </svg>
+          Iniciar sesión con Google
+        </a>
+        ${getAuthErrorMessage()}
+      </div>
+    </div>
+  `;
+}
+
+function getAuthErrorMessage() {
+  const params = new URLSearchParams(window.location.search);
+  const error = params.get("auth_error");
+  const email = params.get("email");
+
+  const messages = {
+    unauthorized_domain: `La cuenta ${email ? `<strong>${email}</strong>` : ""} no pertenece al dominio de MOA Education.`,
+    not_in_team: `La cuenta ${email ? `<strong>${email}</strong>` : ""} no está registrada en el equipo.`,
+    token_exchange_failed: "Error al comunicarse con Google. Intenta de nuevo.",
+    server_error: "Error interno. Contacta a Victor o Luis Fernando.",
+    missing_code: "Flujo de autenticación interrumpido. Intenta de nuevo."
+  };
+
+  if (!error) return "";
+  const msg = messages[error] || `Error: ${error}`;
+  return `<p style="margin-top:20px;padding:12px;background:#fee2e2;color:#991b1b;border-radius:8px;font-size:13px;">${msg}</p>`;
+}
+
+function renderUserBadge(user) {
+  const header = document.querySelector(".page-header");
+  if (!header) return;
+
+  // Remove any existing badge
+  header.querySelector(".user-badge")?.remove();
+
+  const initials = (user.name || user.email || "?")
+    .split(/\s+/)
+    .slice(0, 2)
+    .map(p => p[0] || "")
+    .join("")
+    .toUpperCase();
+
+  const badge = document.createElement("div");
+  badge.className = "user-badge";
+  badge.style.cssText = `
+    margin-left:auto;display:flex;align-items:center;gap:8px;
+    padding:4px 12px 4px 4px;border:1px solid #e9e9e7;border-radius:999px;
+    background:#fff;cursor:pointer;font-size:13px;color:#37352f;
+    transition:background 0.1s;
+  `;
+  badge.title = `${user.name} (${user.role === "admin" ? "Administrador" : "Especialista"}) — Cerrar sesión`;
+  badge.innerHTML = `
+    ${user.picture
+      ? `<img src="${user.picture}" style="width:24px;height:24px;border-radius:50%;flex-shrink:0;" referrerpolicy="no-referrer">`
+      : `<div style="width:24px;height:24px;border-radius:50%;background:#007aff;color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;">${initials}</div>`
+    }
+    <span>${user.name || user.email}</span>
+    <span style="
+      background:${user.role === "admin" ? "#007aff" : "#10b981"};
+      color:#fff;font-size:10px;font-weight:600;padding:1px 7px;border-radius:999px;
+    ">${user.role === "admin" ? "Admin" : "Especialista"}</span>
+    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style="opacity:0.5">
+      <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+  `;
+
+  let menu = null;
+  badge.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (menu) { menu.remove(); menu = null; return; }
+
+    menu = document.createElement("div");
+    menu.style.cssText = `
+      position:fixed;top:${badge.getBoundingClientRect().bottom + 6}px;
+      right:24px;background:#fff;border:1px solid #e9e9e7;border-radius:8px;
+      box-shadow:0 4px 16px rgba(0,0,0,0.1);z-index:1000;min-width:180px;
+      padding:4px 0;font-size:13px;
+    `;
+    menu.innerHTML = `
+      <div style="padding:10px 14px;border-bottom:1px solid #f0f0ef;color:#787774;font-size:12px;">
+        ${user.email}
+      </div>
+      <a href="/api/auth/logout" style="
+        display:block;padding:10px 14px;color:#c0392b;text-decoration:none;
+      ">Cerrar sesión</a>
+    `;
+    document.body.appendChild(menu);
+
+    const closeMenu = () => { menu?.remove(); menu = null; document.removeEventListener("click", closeMenu); };
+    setTimeout(() => document.addEventListener("click", closeMenu), 0);
+  });
+
+  header.appendChild(badge);
+}
+
+// ─── Apply RBAC to the rendered table UI ─────────────────────────────────────
+// Called after renderTable to grey out cells the current user can't edit.
+function applyRbacToTable() {
+  if (!currentUser) return;
+  if (isAdmin()) return; // Admins see everything editable
+
+  const DEADLINE_KEYS = ["Deadline 1", "Deadline 2", "Deadline 3", "Deadline 4"];
+  const myKey = getMySpecialistKey();
+
+  document.querySelectorAll(".editable-cell").forEach(td => {
+    const colKey = td.dataset.key;
+    const rowKey = td.dataset.rowKey;
+    const row = getRowByClientKey(rowKey);
+    const assignedSpecialists = (row?.["Specialists"] || "").toLowerCase();
+
+    let canEdit = false;
+
+    if (colKey === "Estado") {
+      canEdit = myKey && assignedSpecialists.includes(myKey.toLowerCase());
+    } else if (myKey && colKey === myKey) {
+      canEdit = true; // own note column
+    } else if (DEADLINE_KEYS.includes(colKey)) {
+      canEdit = false;
+    } else if (colKey === "Calidad") {
+      canEdit = false; // will be blocked at "Revisado y aprobado" only but visually lock full column for specialists
+    } else {
+      canEdit = false;
+    }
+
+    if (!canEdit) {
+      td.classList.remove("editable-cell");
+      td.title = "";
+      td.style.cursor = "default";
+    }
+  });
+}
+
 // ─── Boot ───────────────────────────────────────────────────────────────────
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+  const authenticated = await initAuth();
+  if (!authenticated) return; // login screen is showing
+
   initTabs();
   initToolbar();
   initToolbarPanels();
@@ -2910,5 +3151,6 @@ document.addEventListener("DOMContentLoaded", () => {
   initSelectionInteractions();
   initCalendarView();
   initSubmitForm();
-  fetchData();
+  await fetchData();
+  // applyRbacToTable is called inside renderTable after it builds the DOM
 });

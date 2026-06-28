@@ -1,22 +1,17 @@
 {
   "version": 2,
-  "buildCommand": "echo 'No build step required'",
+  "buildCommand": "echo 'static'",
   "outputDirectory": "public",
-  "functions": {
-    "api/**/*.js": {
-      "runtime": "@vercel/node@3"
-    }
-  },
   "rewrites": [
-    { "source": "/api/auth/login",    "destination": "/api/auth/login" },
-    { "source": "/api/auth/callback", "destination": "/api/auth/callback" },
-    { "source": "/api/auth/logout",   "destination": "/api/auth/logout" },
-    { "source": "/api/auth/me",       "destination": "/api/auth/me" },
-    { "source": "/api/data",          "destination": "/api/data/index" },
-    { "source": "/api/data/create",   "destination": "/api/data/create" },
-    { "source": "/api/data/update",   "destination": "/api/data/update" },
-    { "source": "/api/data/delete",   "destination": "/api/data/delete" },
-    { "source": "/(.*)",              "destination": "/index.html" }
+    { "source": "/api/auth/login",    "destination": "/api/auth/login.js" },
+    { "source": "/api/auth/callback", "destination": "/api/auth/callback.js" },
+    { "source": "/api/auth/logout",   "destination": "/api/auth/logout.js" },
+    { "source": "/api/auth/me",       "destination": "/api/auth/me.js" },
+    { "source": "/api/data",          "destination": "/api/data/index.js" },
+    { "source": "/api/data/create",   "destination": "/api/data/create.js" },
+    { "source": "/api/data/update",   "destination": "/api/data/update.js" },
+    { "source": "/api/data/delete",   "destination": "/api/data/delete.js" },
+    { "source": "/((?!api/).*)",      "destination": "/index.html" }
   ],
   "headers": [
     {

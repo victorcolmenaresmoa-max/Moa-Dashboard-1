@@ -394,22 +394,12 @@ async function patchCell(row, key, newValue, options = {}) {
 function clientCanEdit(row, key, newValue) {
   if (!currentUser) return { allowed: false, reason: "No autenticado." };
 
-  const DEADLINE_KEYS = ["Deadline 1", "Deadline 2", "Deadline 3", "Deadline 4"];
   const isCreator = row["CreatedBy"] === currentUser.email;
 
   if (isAdmin()) return { allowed: true };
 
-  // Block "Revisado y aprobado" for all specialists (even creators)
-  if (key === "Calidad" && newValue === "Revisado y aprobado") {
-    return { allowed: false, reason: "Solo los administradores pueden marcar 'Revisado y aprobado'." };
-  }
-  
-  // Block Deadline columns for all specialists
-  if (DEADLINE_KEYS.includes(key)) {
-    return { allowed: false, reason: "Solo los administradores pueden modificar los Deadlines principales." };
-  }
-
-  // If specialist is the creator, they can edit anything else
+  // A specialist can fully edit the tasks they created, including Calidad and Deadline 1–4.
+  // Tasks created by other people remain protected below.
   if (isCreator) return { allowed: true };
 
   const myKey = getMySpecialistKey();
@@ -3185,9 +3175,8 @@ function renderUserBadge(user) {
 // ─── Apply RBAC to the rendered table UI ─────────────────────────────────────
 function applyRbacToTable() {
   if (!currentUser) return;
-  if (isAdmin()) return; 
+  if (isAdmin()) return;
 
-  const DEADLINE_KEYS = ["Deadline 1", "Deadline 2", "Deadline 3", "Deadline 4"];
   const myKey = getMySpecialistKey();
 
   document.querySelectorAll(".editable-cell").forEach(td => {
@@ -3199,22 +3188,14 @@ function applyRbacToTable() {
 
     let canEdit = false;
 
-    if (isAdmin() || isCreator) {
-      if (!isAdmin() && DEADLINE_KEYS.includes(colKey)) {
-        canEdit = false;
-      } else if (!isAdmin() && colKey === "Calidad") {
-        canEdit = false;
-      } else {
-        canEdit = true;
-      }
-    } else {
-      if (colKey === "Estado") {
-        canEdit = myKey && assignedSpecialists.includes(myKey.toLowerCase());
-      } else if (myKey && colKey === myKey) {
-        canEdit = true;
-      } else {
-        canEdit = false;
-      }
+    if (isCreator) {
+      // The creator can edit every field in their own task from the dashboard,
+      // including Calidad and Deadline 1–4.
+      canEdit = true;
+    } else if (colKey === "Estado") {
+      canEdit = myKey && assignedSpecialists.includes(myKey.toLowerCase());
+    } else if (myKey && colKey === myKey) {
+      canEdit = true;
     }
 
     if (!canEdit) {

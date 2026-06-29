@@ -21,6 +21,7 @@ function isSpecialist() { return currentUser?.role === "specialist"; }
 function getMySpecialistKey() { return currentUser?.specialistKey || null; }
 const PARENT_ID_KEY = "Parent ID";
 const OPEN_SUBITEMS_STORAGE_KEY = "moa-dashboard-open-subitems-v1";
+const PRODUCT_TOUR_STORAGE_KEY = "moa-dashboard-product-tour-completed-v1";
 
 // ─── Options used by the dashboard dropdowns ────────────────────────────────
 const OPTIONS = {
@@ -3172,6 +3173,393 @@ function renderUserBadge(user) {
   header.appendChild(badge);
 }
 
+
+// ─── Guided product tour / onboarding ───────────────────────────────────────
+const PRODUCT_TOUR_STEPS = [
+  {
+    title: "Bienvenido/a al Specialists Dashboard",
+    body: "Te voy a mostrar rápidamente cómo usar las funciones principales del dashboard sin que tengas que adivinar dónde está cada cosa.",
+    target: null,
+    placement: "center"
+  },
+  {
+    title: "Vistas principales",
+    body: "Aquí cambias entre All Tasks, Backlog, Calendar y Submit a task. Cada vista cumple una función distinta dentro del flujo de trabajo.",
+    target: ".tabs",
+    placement: "bottom"
+  },
+  {
+    title: "All Tasks",
+    body: "Esta es la vista general. Aquí puedes ver todas las tareas, revisar sus estados, especialistas, fechas, calidad, comentarios y deadlines.",
+    target: '[data-tab="all-tasks"]',
+    placement: "bottom",
+    before: () => setActiveTab("all-tasks")
+  },
+  {
+    title: "Edición directa",
+    body: "Haz clic sobre una celda editable para modificarla. Los permisos se respetan: cada especialista solo puede editar lo que le corresponde o las tareas que creó.",
+    target: "td.editable-cell, #main-table, .table-wrapper",
+    placement: "top",
+    before: () => setActiveTab("all-tasks")
+  },
+  {
+    title: "Sub-items",
+    body: "El triángulo junto al nombre de una tarea abre sus sub-items. El botón + permite crear subtareas al estilo Notion cuando tienes permiso.",
+    target: ".subitem-toggle, .task-title-wrap, #main-table",
+    placement: "right",
+    before: () => setActiveTab("all-tasks")
+  },
+  {
+    title: "Filter",
+    body: "Usa filtros para ver tareas por estado, especialista, vertical, calidad o deadlines. Es ideal cuando el dashboard empieza a crecer.",
+    target: "#btn-filter",
+    placement: "bottom",
+    before: () => setActiveTab("all-tasks")
+  },
+  {
+    title: "Sort",
+    body: "Ordena las tareas por nombre, fecha, próximo deadline, estado, tipo de trabajo, vertical o rondas de revisión.",
+    target: "#btn-sort",
+    placement: "bottom",
+    before: () => setActiveTab("all-tasks")
+  },
+  {
+    title: "Search",
+    body: "El buscador te ayuda a encontrar tareas rápido por nombre, descripción, especialista, comentario o cualquier texto visible.",
+    target: "#btn-search",
+    placement: "bottom",
+    before: () => setActiveTab("all-tasks")
+  },
+  {
+    title: "New",
+    body: "Este botón te lleva directo al formulario para crear una nueva tarea. También puedes entrar desde la pestaña Submit a task.",
+    target: "#btn-new",
+    placement: "bottom",
+    before: () => setActiveTab("all-tasks")
+  },
+  {
+    title: "Calendar",
+    body: "La vista Calendar muestra fechas de inicio, fechas finales y Deadline 1–4 para que el equipo vea claramente qué viene.",
+    target: '[data-tab="calendar"]',
+    placement: "bottom"
+  },
+  {
+    title: "Deadlines en calendario",
+    body: "Dentro del calendario puedes navegar por mes, filtrar por especialista y abrir cualquier tarjeta para volver a la tarea en All Tasks.",
+    target: "#view-calendar .calendar-main-card, #calendar-board",
+    placement: "top",
+    before: () => setActiveTab("calendar")
+  },
+  {
+    title: "Backlog",
+    body: "Backlog es una vista más tipo Notion. Desde ahí puedes seleccionar tareas y mover a la papelera las que tú creaste.",
+    target: '[data-tab="backlog"]',
+    placement: "bottom"
+  },
+  {
+    title: "Submit a task",
+    body: "Este formulario crea nuevas tareas con tipo de trabajo, vertical, especialistas, descripción, fechas y deadlines desde el inicio.",
+    target: "#submit-form, #view-submit .submit-form-card",
+    placement: "top",
+    before: () => setActiveTab("submit")
+  },
+  {
+    title: "Repetir el tutorial",
+    body: "Cuando quieras volver a ver esta guía, presiona el botón Tutorial de la barra superior. La guía solo aparece automáticamente la primera vez.",
+    target: "#btn-tour",
+    placement: "bottom"
+  }
+];
+
+let productTourState = {
+  active: false,
+  index: 0,
+  forced: false,
+  resizeHandler: null,
+  keyHandler: null
+};
+
+function initProductTour() {
+  const tourButton = document.getElementById("btn-tour") || document.getElementById("btn-auto");
+  if (tourButton) {
+    tourButton.addEventListener("click", e => {
+      e.preventDefault();
+      e.stopPropagation();
+      startProductTour(true);
+    });
+  }
+
+  productTourState.resizeHandler = () => {
+    if (productTourState.active) updateProductTourPosition();
+  };
+
+  productTourState.keyHandler = e => {
+    if (!productTourState.active) return;
+    if (e.key === "Escape") finishProductTour(false);
+    if (e.key === "ArrowRight") nextProductTourStep();
+    if (e.key === "ArrowLeft") previousProductTourStep();
+  };
+
+  window.addEventListener("resize", productTourState.resizeHandler);
+  document.addEventListener("keydown", productTourState.keyHandler);
+}
+
+function scheduleProductTour() {
+  try {
+    if (localStorage.getItem(PRODUCT_TOUR_STORAGE_KEY) === "true") return;
+  } catch (_) {}
+
+  window.setTimeout(() => {
+    if (!document.body || !currentUser) return;
+    startProductTour(false);
+  }, 900);
+}
+
+function startProductTour(forced = false) {
+  try {
+    if (!forced && localStorage.getItem(PRODUCT_TOUR_STORAGE_KEY) === "true") return;
+  } catch (_) {}
+
+  closeToolbarPanels();
+  productTourState.active = true;
+  productTourState.index = 0;
+  productTourState.forced = forced;
+  document.body.classList.add("moa-tour-active");
+  renderProductTourStep();
+}
+
+function renderProductTourStep() {
+  if (!productTourState.active) return;
+
+  const step = PRODUCT_TOUR_STEPS[productTourState.index];
+  if (!step) {
+    finishProductTour(true);
+    return;
+  }
+
+  if (typeof step.before === "function") {
+    step.before();
+  }
+
+  closeToolbarPanels();
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      const target = getProductTourTarget(step);
+      if (target) {
+        target.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
+      }
+
+      window.setTimeout(() => {
+        ensureProductTourDOM();
+        updateProductTourContent(step);
+        updateProductTourPosition();
+      }, target ? 220 : 0);
+    });
+  });
+}
+
+function ensureProductTourDOM() {
+  let root = document.getElementById("moa-tour-root");
+  if (root) return root;
+
+  root = document.createElement("div");
+  root.id = "moa-tour-root";
+  root.className = "moa-tour-root";
+  root.innerHTML = `
+    <div class="moa-tour-spotlight" aria-hidden="true"></div>
+    <section class="moa-tour-card" role="dialog" aria-modal="true" aria-live="polite" aria-labelledby="moa-tour-title">
+      <div class="moa-tour-card__accent" aria-hidden="true"></div>
+      <div class="moa-tour-card__top">
+        <span class="moa-tour-kicker">MOA Guide</span>
+        <span class="moa-tour-progress" id="moa-tour-progress"></span>
+      </div>
+      <h3 id="moa-tour-title"></h3>
+      <p id="moa-tour-body"></p>
+      <div class="moa-tour-dots" id="moa-tour-dots" aria-hidden="true"></div>
+      <div class="moa-tour-actions">
+        <button type="button" class="moa-tour-btn moa-tour-btn--ghost" data-tour-skip>Omitir</button>
+        <div class="moa-tour-actions__right">
+          <button type="button" class="moa-tour-btn moa-tour-btn--secondary" data-tour-prev>Atrás</button>
+          <button type="button" class="moa-tour-btn moa-tour-btn--primary" data-tour-next>Siguiente</button>
+        </div>
+      </div>
+    </section>
+  `;
+
+  root.addEventListener("click", e => {
+    if (e.target.closest("[data-tour-skip]")) {
+      e.preventDefault();
+      finishProductTour(true);
+      return;
+    }
+
+    if (e.target.closest("[data-tour-prev]")) {
+      e.preventDefault();
+      previousProductTourStep();
+      return;
+    }
+
+    if (e.target.closest("[data-tour-next]")) {
+      e.preventDefault();
+      nextProductTourStep();
+    }
+  });
+
+  document.body.appendChild(root);
+  return root;
+}
+
+function updateProductTourContent(step) {
+  const title = document.getElementById("moa-tour-title");
+  const body = document.getElementById("moa-tour-body");
+  const progress = document.getElementById("moa-tour-progress");
+  const dots = document.getElementById("moa-tour-dots");
+  const prev = document.querySelector("[data-tour-prev]");
+  const next = document.querySelector("[data-tour-next]");
+
+  if (title) title.textContent = step.title;
+  if (body) body.textContent = step.body;
+  if (progress) progress.textContent = `${productTourState.index + 1}/${PRODUCT_TOUR_STEPS.length}`;
+  if (prev) prev.disabled = productTourState.index === 0;
+  if (next) next.textContent = productTourState.index === PRODUCT_TOUR_STEPS.length - 1 ? "Finalizar" : "Siguiente";
+
+  if (dots) {
+    dots.innerHTML = PRODUCT_TOUR_STEPS.map((_, index) => (
+      `<span class="${index === productTourState.index ? "is-active" : ""}"></span>`
+    )).join("");
+  }
+}
+
+function updateProductTourPosition() {
+  if (!productTourState.active) return;
+
+  const step = PRODUCT_TOUR_STEPS[productTourState.index];
+  const root = document.getElementById("moa-tour-root");
+  const spotlight = root?.querySelector(".moa-tour-spotlight");
+  const card = root?.querySelector(".moa-tour-card");
+  if (!root || !spotlight || !card || !step) return;
+
+  const target = getProductTourTarget(step);
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+  const cardWidth = Math.min(390, Math.max(300, viewportWidth - 32));
+  const margin = 18;
+
+  card.style.width = `${cardWidth}px`;
+
+  if (!target || step.placement === "center") {
+    spotlight.classList.add("moa-tour-spotlight--hidden");
+    card.style.left = `${Math.max(16, (viewportWidth - cardWidth) / 2)}px`;
+    card.style.top = `${Math.max(24, (viewportHeight - card.offsetHeight) / 2)}px`;
+    card.dataset.placement = "center";
+    return;
+  }
+
+  spotlight.classList.remove("moa-tour-spotlight--hidden");
+
+  const rect = target.getBoundingClientRect();
+  const pad = 8;
+  const top = Math.max(8, rect.top - pad);
+  const left = Math.max(8, rect.left - pad);
+  const width = Math.min(viewportWidth - 16, rect.width + pad * 2);
+  const height = Math.min(viewportHeight - 16, rect.height + pad * 2);
+
+  spotlight.style.top = `${top}px`;
+  spotlight.style.left = `${left}px`;
+  spotlight.style.width = `${width}px`;
+  spotlight.style.height = `${height}px`;
+
+  const cardHeight = card.offsetHeight || 260;
+  const preferred = step.placement || "bottom";
+  let cardLeft = left;
+  let cardTop = top + height + margin;
+  let placement = preferred;
+
+  if (preferred === "top") {
+    cardTop = top - cardHeight - margin;
+  }
+
+  if (preferred === "right") {
+    cardLeft = left + width + margin;
+    cardTop = top + Math.min(20, Math.max(0, (height - cardHeight) / 2));
+  }
+
+  if (preferred === "left") {
+    cardLeft = left - cardWidth - margin;
+    cardTop = top + Math.min(20, Math.max(0, (height - cardHeight) / 2));
+  }
+
+  if (cardTop + cardHeight > viewportHeight - 14) {
+    cardTop = top - cardHeight - margin;
+    placement = "top";
+  }
+
+  if (cardTop < 14) {
+    cardTop = Math.min(viewportHeight - cardHeight - 14, top + height + margin);
+    placement = "bottom";
+  }
+
+  if (cardLeft + cardWidth > viewportWidth - 14) {
+    cardLeft = viewportWidth - cardWidth - 14;
+  }
+
+  if (cardLeft < 14) {
+    cardLeft = 14;
+  }
+
+  card.style.left = `${cardLeft}px`;
+  card.style.top = `${Math.max(14, cardTop)}px`;
+  card.dataset.placement = placement;
+}
+
+function getProductTourTarget(step) {
+  if (!step || !step.target) return null;
+  const selectors = String(step.target).split(",").map(item => item.trim()).filter(Boolean);
+
+  for (const selector of selectors) {
+    const elements = Array.from(document.querySelectorAll(selector));
+    const visible = elements.find(element => {
+      const rect = element.getBoundingClientRect();
+      const styles = window.getComputedStyle(element);
+      return rect.width > 0 && rect.height > 0 && styles.visibility !== "hidden" && styles.display !== "none";
+    });
+    if (visible) return visible;
+  }
+
+  return null;
+}
+
+function nextProductTourStep() {
+  if (!productTourState.active) return;
+
+  if (productTourState.index >= PRODUCT_TOUR_STEPS.length - 1) {
+    finishProductTour(true);
+    return;
+  }
+
+  productTourState.index += 1;
+  renderProductTourStep();
+}
+
+function previousProductTourStep() {
+  if (!productTourState.active || productTourState.index === 0) return;
+  productTourState.index -= 1;
+  renderProductTourStep();
+}
+
+function finishProductTour(markCompleted = true) {
+  productTourState.active = false;
+  document.body.classList.remove("moa-tour-active");
+  document.getElementById("moa-tour-root")?.remove();
+
+  if (markCompleted) {
+    try {
+      localStorage.setItem(PRODUCT_TOUR_STORAGE_KEY, "true");
+    } catch (_) {}
+  }
+}
+
 // ─── Apply RBAC to the rendered table UI ─────────────────────────────────────
 function applyRbacToTable() {
   if (!currentUser) return;
@@ -3219,5 +3607,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   initSelectionInteractions();
   initCalendarView();
   initSubmitForm();
+  initProductTour();
   await fetchData();
+  scheduleProductTour();
 });

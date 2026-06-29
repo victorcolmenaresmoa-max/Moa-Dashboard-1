@@ -3115,19 +3115,28 @@ function applyRbacToTable() {
     const rowKey = td.dataset.rowKey;
     const row = getRowByClientKey(rowKey);
     const assignedSpecialists = (row?.["Specialists"] || "").toLowerCase();
+    const isCreator = row?.["CreatedBy"] === currentUser.email;
 
     let canEdit = false;
 
-    if (colKey === "Estado") {
-      canEdit = myKey && assignedSpecialists.includes(myKey.toLowerCase());
-    } else if (myKey && colKey === myKey) {
-      canEdit = true; // own note column
-    } else if (DEADLINE_KEYS.includes(colKey)) {
-      canEdit = false;
-    } else if (colKey === "Calidad") {
-      canEdit = false; // will be blocked at "Revisado y aprobado" only but visually lock full column for specialists
+    if (isAdmin() || isCreator) {
+      // El creador o admin pueden editar, excepto bloquear columnas críticas para especialistas
+      if (!isAdmin() && DEADLINE_KEYS.includes(colKey)) {
+        canEdit = false;
+      } else if (!isAdmin() && colKey === "Calidad") {
+        canEdit = false;
+      } else {
+        canEdit = true;
+      }
     } else {
-      canEdit = false;
+      // Lógica normal para quienes no crearon la tarea
+      if (colKey === "Estado") {
+        canEdit = myKey && assignedSpecialists.includes(myKey.toLowerCase());
+      } else if (myKey && colKey === myKey) {
+        canEdit = true;
+      } else {
+        canEdit = false;
+      }
     }
 
     if (!canEdit) {

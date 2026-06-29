@@ -47,20 +47,18 @@ const OPTIONS = {
   ]
 };
 
-// These are the visible columns in the table. Keep the key names equal to the
-// headers in Google Sheets. Sub-items are stored as normal rows whose "Parent ID"
-// points to the parent task's ID.
+// These are the visible columns in the table.
 const SPECIALIST_NOTE_COLUMNS = [
-  { key: "Victor Colmenares",     label: "Victor",              icon: "👤", type: "specialist-note", editable: true },
-  { key: "Roxangel Rodriguez",    label: "Roxangel",            icon: "👤", type: "specialist-note", editable: true },
-  { key: "Ailil Coutinho",        label: "Ailil",               icon: "👤", type: "specialist-note", editable: true },
-  { key: "Norilys Cermeño",       label: "Norilys",             icon: "👤", type: "specialist-note", editable: true },
+  { key: "Victor Colmenares",     label: "Victor",             icon: "👤", type: "specialist-note", editable: true },
+  { key: "Roxangel Rodriguez",    label: "Roxangel",           icon: "👤", type: "specialist-note", editable: true },
+  { key: "Ailil Coutinho",        label: "Ailil",              icon: "👤", type: "specialist-note", editable: true },
+  { key: "Norilys Cermeño",       label: "Norilys",            icon: "👤", type: "specialist-note", editable: true },
   { key: "Dirección Académica",   label: "Dirección Académica", icon: "👤", type: "specialist-note", editable: true },
-  { key: "Veronica Gonzales",     label: "Veronica",            icon: "👤", type: "specialist-note", editable: true },
-  { key: "Melisa Espinal",        label: "Melisa",              icon: "👤", type: "specialist-note", editable: true },
-  { key: "Noryley Suescun",       label: "Noryley",             icon: "👤", type: "specialist-note", editable: true },
-  { key: "Ninfa Vivas",           label: "Ninfa",               icon: "👤", type: "specialist-note", editable: true },
-  { key: "Asdrubal Marquez",      label: "Asdrubal",            icon: "👤", type: "specialist-note", editable: true }
+  { key: "Veronica Gonzales",     label: "Veronica",           icon: "👤", type: "specialist-note", editable: true },
+  { key: "Melisa Espinal",        label: "Melisa",             icon: "👤", type: "specialist-note", editable: true },
+  { key: "Noryley Suescun",       label: "Noryley",            icon: "👤", type: "specialist-note", editable: true },
+  { key: "Ninfa Vivas",           label: "Ninfa",              icon: "👤", type: "specialist-note", editable: true },
+  { key: "Asdrubal Marquez",      label: "Asdrubal",           icon: "👤", type: "specialist-note", editable: true }
 ];
 
 const ALL_TASKS_COLUMNS = [
@@ -118,6 +116,7 @@ const COLUMN_ALIASES = {
   [PARENT_ID_KEY]: ["ParentID", "Parent Id", "Parent id", "Subitem Parent", "Parent Task ID"]
 };
 
+// IMPORTANTE: Added "CreatedBy" here so the app knows to save it
 const ALL_SHEET_KEYS = [
   "ID",
   "Tipo de trabajo",
@@ -144,111 +143,8 @@ const ALL_SHEET_KEYS = [
   "Noryley Suescun",
   "Ninfa Vivas",
   "Asdrubal Marquez",
-  PARENT_ID_KEY
-];
-
-// ─── Seed data shown while SheetDB URL is not configured ────────────────────
-const SEED_DATA = [
-  {
-    "ID": "seed-001",
-    [PARENT_ID_KEY]: "",
-    "Tipo de trabajo": "PERPETUAL",
-    "TASKS": "Evaluaciones",
-    "Vertical": "School",
-    "Brief Description": "Creación de los instrumentos de evaluación para todo el ecosistema MOA.",
-    "Specialists": "Ailil Coutinho, Victor Colmenares",
-    "Fecha de Inicio y Fin": "",
-    "Estado": "In progress",
-    "Calidad": "",
-    "Rondas de revisión": "",
-    "Comments": "",
-    "Deadline 1": "",
-    "Deadline 2": "",
-    "Deadline 3": "",
-    "Deadline 4": "",
-    "Noryley Suescun": "",
-    "Roxangel Rodriguez": "",
-    "Ailil Coutinho": "Pruebas Externas Colegios, último lote",
-    "Asdrubal Marquez": "",
-    "Norilys Cermeño": "",
-    "Victor Colmenares": "Mis To-Dos · Mis fechas de entrega",
-    "Melisa Espinal": ""
-  },
-  {
-    "ID": "seed-001-a",
-    [PARENT_ID_KEY]: "seed-001",
-    "Tipo de trabajo": "ON-DEMAND",
-    "TASKS": "Pruebas regulares — Competencias 12 y 13",
-    "Vertical": "School",
-    "Brief Description": "Versiones desde 3GV2Ñ hasta 1ÑV5Ñ.",
-    "Specialists": "Ailil Coutinho, Victor Colmenares",
-    "Fecha de Inicio y Fin": "Apr 13, 2026 – Apr 17, 2026",
-    "Estado": "Done",
-    "Calidad": "",
-    "Rondas de revisión": "",
-    "Comments": "",
-    "Deadline 1": "",
-    "Deadline 2": "",
-    "Deadline 3": "",
-    "Deadline 4": "",
-    "Noryley Suescun": "",
-    "Roxangel Rodriguez": "",
-    "Ailil Coutinho": "",
-    "Asdrubal Marquez": "",
-    "Norilys Cermeño": "",
-    "Victor Colmenares": "",
-    "Melisa Espinal": ""
-  },
-  {
-    "ID": "seed-001-b",
-    [PARENT_ID_KEY]: "seed-001",
-    "Tipo de trabajo": "ON-DEMAND",
-    "TASKS": "Pruebas regulares — Competencias 14 y 15",
-    "Vertical": "School",
-    "Brief Description": "Quizzes y versiones por grado.",
-    "Specialists": "Ailil Coutinho, Victor Colmenares",
-    "Fecha de Inicio y Fin": "Apr 20, 2026 – Apr 24, 2026",
-    "Estado": "Delayed Done",
-    "Calidad": "",
-    "Rondas de revisión": "",
-    "Comments": "",
-    "Deadline 1": "",
-    "Deadline 2": "",
-    "Deadline 3": "",
-    "Deadline 4": "",
-    "Noryley Suescun": "",
-    "Roxangel Rodriguez": "",
-    "Ailil Coutinho": "",
-    "Asdrubal Marquez": "",
-    "Norilys Cermeño": "",
-    "Victor Colmenares": "",
-    "Melisa Espinal": ""
-  },
-  {
-    "ID": "seed-002",
-    [PARENT_ID_KEY]: "",
-    "Tipo de trabajo": "PERPETUAL",
-    "TASKS": "English For Teachers (EFT)",
-    "Vertical": "School",
-    "Brief Description": "Enseña inglés al equipo docente de MOA School. Cada docente recibe una sesión sincrónica semanal y, cada dos semanas, un paquete de actividades para trabajar de forma autónoma.",
-    "Specialists": "Asdrubal Marquez",
-    "Fecha de Inicio y Fin": "",
-    "Estado": "In progress",
-    "Calidad": "",
-    "Rondas de revisión": "2",
-    "Comments": "Cada unidad contiene video, audio, vocabulario, gramática, diálogo, juegos flash y proyecto.",
-    "Deadline 1": "",
-    "Deadline 2": "",
-    "Deadline 3": "",
-    "Deadline 4": "",
-    "Noryley Suescun": "",
-    "Roxangel Rodriguez": "",
-    "Ailil Coutinho": "",
-    "Asdrubal Marquez": "Mis To-Dos · Mis fechas de entrega",
-    "Norilys Cermeño": "",
-    "Victor Colmenares": "",
-    "Melisa Espinal": ""
-  }
+  PARENT_ID_KEY,
+  "CreatedBy"
 ];
 
 // ─── State ──────────────────────────────────────────────────────────────────
@@ -270,36 +166,11 @@ let calendarDate = new Date();
 let calendarSpecialistFilter = "all";
 
 const FILTER_CONFIG = {
-  tipo: {
-    key: "Tipo de trabajo",
-    label: "Tipo de trabajo",
-    options: OPTIONS.tipo,
-    multiple: false
-  },
-  estado: {
-    key: "Estado",
-    label: "Estado",
-    options: OPTIONS.estado,
-    multiple: false
-  },
-  vertical: {
-    key: "Vertical",
-    label: "Vertical",
-    options: OPTIONS.vertical,
-    multiple: true
-  },
-  specialists: {
-    key: "Specialists",
-    label: "Specialists",
-    options: OPTIONS.specialists,
-    multiple: true
-  },
-  calidad: {
-    key: "Calidad",
-    label: "Calidad",
-    options: OPTIONS.calidad,
-    multiple: false
-  }
+  tipo: { key: "Tipo de trabajo", label: "Tipo de trabajo", options: OPTIONS.tipo, multiple: false },
+  estado: { key: "Estado", label: "Estado", options: OPTIONS.estado, multiple: false },
+  vertical: { key: "Vertical", label: "Vertical", options: OPTIONS.vertical, multiple: true },
+  specialists: { key: "Specialists", label: "Specialists", options: OPTIONS.specialists, multiple: true },
+  calidad: { key: "Calidad", label: "Calidad", options: OPTIONS.calidad, multiple: false }
 };
 
 const SORT_OPTIONS = [
@@ -317,16 +188,7 @@ const SORT_OPTIONS = [
 const DEADLINE_KEYS = ["Deadline 1", "Deadline 2", "Deadline 3", "Deadline 4"];
 
 function createEmptyFilters() {
-  return {
-    tipo: new Set(),
-    estado: new Set(),
-    vertical: new Set(),
-    specialists: new Set(),
-    calidad: new Set(),
-    deadlineMode: "all",
-    dateFrom: "",
-    dateTo: ""
-  };
+  return { tipo: new Set(), estado: new Set(), vertical: new Set(), specialists: new Set(), calidad: new Set(), deadlineMode: "all", dateFrom: "", dateTo: "" };
 }
 
 // ─── Fetch from server proxy ─────────────────────────────────────────────────
@@ -341,13 +203,7 @@ async function fetchData() {
 
   try {
     const res = await fetch(API_BASE, { credentials: "same-origin" });
-
-    if (res.status === 401) {
-      // Session expired mid-session — redirect to login
-      window.location.href = "/api/auth/login";
-      return;
-    }
-
+    if (res.status === 401) { window.location.href = "/api/auth/login"; return; }
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
     const json = await res.json();
@@ -469,7 +325,6 @@ async function postRow(rowData, options = {}) {
 async function patchCell(row, key, newValue, options = {}) {
   if (!row) return false;
 
-  // ── Client-side RBAC pre-check (UX only — server enforces the real rules) ──
   const clientCheck = clientCanEdit(row, key, newValue);
   if (!clientCheck.allowed) {
     showToast(clientCheck.reason, "error");
@@ -504,7 +359,8 @@ async function patchCell(row, key, newValue, options = {}) {
         matchValue,
         key,
         value: newValue,
-        taskSpecialists: row["Specialists"] || "" // sent so server can validate Estado changes
+        taskSpecialists: row["Specialists"] || "", // Comma fixed here
+        taskCreator: row["CreatedBy"] || "" 
       })
     });
 
@@ -533,23 +389,28 @@ async function patchCell(row, key, newValue, options = {}) {
 }
 
 /**
- * Client-side RBAC pre-check — mirrors the server logic for instant UX feedback.
- * The server always re-validates, so this is defense-in-depth only.
+ * Client-side RBAC pre-check
  */
 function clientCanEdit(row, key, newValue) {
   if (!currentUser) return { allowed: false, reason: "No autenticado." };
 
   const DEADLINE_KEYS = ["Deadline 1", "Deadline 2", "Deadline 3", "Deadline 4"];
+  const isCreator = row["CreatedBy"] === currentUser.email;
 
   if (isAdmin()) return { allowed: true };
 
-  // Specialist rules
+  // Block "Revisado y aprobado" for all specialists (even creators)
   if (key === "Calidad" && newValue === "Revisado y aprobado") {
     return { allowed: false, reason: "Solo los administradores pueden marcar 'Revisado y aprobado'." };
   }
+  
+  // Block Deadline columns for all specialists
   if (DEADLINE_KEYS.includes(key)) {
     return { allowed: false, reason: "Solo los administradores pueden modificar los Deadlines principales." };
   }
+
+  // If specialist is the creator, they can edit anything else
+  if (isCreator) return { allowed: true };
 
   const myKey = getMySpecialistKey();
   if (myKey && key === myKey) return { allowed: true }; // own note column
@@ -560,7 +421,7 @@ function clientCanEdit(row, key, newValue) {
     return { allowed: false, reason: "Solo puedes cambiar el Estado en las tareas en las que estás asignado/a." };
   }
 
-  return { allowed: false, reason: "No tienes permiso para editar este campo." };
+  return { allowed: false, reason: "No tienes permiso para editar este campo porque no creaste la tarea." };
 }
 
 async function ensureRowId(row) {
@@ -646,6 +507,7 @@ async function createSubitem(parent, title) {
   subitem["Vertical"] = parent["Vertical"] || "";
   subitem["Specialists"] = parent["Specialists"] || "";
   subitem["Estado"] = "Not started";
+  subitem["CreatedBy"] = currentUser.email; // INSTANT OWNERSHIP
 
   openSubitems.add(parent.ID);
   saveOpenSubitems();
@@ -754,15 +616,19 @@ function getRowsToDeleteFromSelection() {
 }
 
 async function deleteSelectedRows() {
-  if (!isAdmin()) {
-    showToast("Solo los administradores pueden eliminar tareas.", "error");
-    return;
-  }
-
   const selectedRows = getSelectedRows();
   const rowsToDelete = getRowsToDeleteFromSelection();
 
   if (!rowsToDelete.length) return;
+
+  // Si no es admin, validar que sea el creador de TODAS las tareas que intentará borrar
+  if (!isAdmin()) {
+    const unauthorized = rowsToDelete.some(r => r["CreatedBy"] !== currentUser.email);
+    if (unauthorized) {
+      showToast("Solo puedes eliminar tareas que tú creaste.", "error");
+      return;
+    }
+  }
 
   const extraChildren = rowsToDelete.length - selectedRows.length;
   const message = extraChildren > 0
@@ -929,6 +795,9 @@ function createTableRow(row, meta) {
   const selected = selectedRowKeys.has(rowKey);
   const showSelector = isBacklogView();
   const visibleColumns = getVisibleColumns();
+  
+  const isCreator = row["CreatedBy"] === currentUser?.email;
+  const canDelete = isAdmin() || isCreator;
 
   tr.className = `${meta.isSubitem ? "subitem-row" : "task-parent-row"} ${selected && showSelector ? "selected-row" : ""}`.trim();
   tr.dataset.rowKey = row.__clientKey;
@@ -936,17 +805,20 @@ function createTableRow(row, meta) {
   if (showSelector) {
     const selectorTd = document.createElement("td");
     selectorTd.className = `row-selector-cell ${meta.isSubitem ? "row-selector-cell--subitem" : ""}`.trim();
-    selectorTd.innerHTML = `
-      <button
-        type="button"
-        class="row-selector ${selected ? "is-selected" : ""}"
-        data-row-select="${esc(row.__clientKey)}"
-        aria-label="${selected ? "Unselect" : "Select"} ${esc(row["TASKS"] || "task")}" 
-        title="Move to Trash"
-      >
-        <span>${selected ? "✓" : ""}</span>
-      </button>
-    `;
+    
+    if (canDelete) {
+      selectorTd.innerHTML = `
+        <button
+          type="button"
+          class="row-selector ${selected ? "is-selected" : ""}"
+          data-row-select="${esc(row.__clientKey)}"
+          aria-label="${selected ? "Unselect" : "Select"} ${esc(row["TASKS"] || "task")}" 
+          title="Move to Trash"
+        >
+          <span>${selected ? "✓" : ""}</span>
+        </button>
+      `;
+    }
     tr.appendChild(selectorTd);
   }
 
@@ -971,6 +843,14 @@ function createTableRow(row, meta) {
 
 function createSubitemCreateRow(parent) {
   const tr = document.createElement("tr");
+  
+  // Ocultar fila de creación si no es Admin ni Creador
+  const isCreator = parent["CreatedBy"] === currentUser?.email;
+  if (!isAdmin() && !isCreator) {
+    tr.style.display = "none";
+    return tr;
+  }
+
   const parentKey = getRowKey(parent);
   const isActive = activeSubitemParentKey === parentKey;
   tr.className = `subitem-create-row ${isActive ? "subitem-create-row--active" : ""}`;
@@ -1006,46 +886,29 @@ function renderCell(value, type, key, row, meta = {}) {
   if (!value && value !== 0) return `<span class="cell-empty"></span>`;
 
   switch (type) {
-    case "tipo":
-      return renderTipoBadge(value);
-
+    case "tipo": return renderTipoBadge(value);
     case "vertical": {
       const parts = splitMulti(value);
       return `<div class="badges-col">${parts.map(p => renderVerticalBadge(p)).join("")}</div>`;
     }
-
     case "specialists": {
       const names = splitMulti(value);
       return `<div class="specialists-col">${names.map((n, i) => renderAvatarChip(n, i)).join("")}</div>`;
     }
-
-    case "daterange":
-      return `<span class="date-range">📅 ${esc(value)}</span>`;
-
-    case "date":
-      return `<span class="date-range">${esc(value)}</span>`;
-
-    case "estado":
-      return renderEstado(value);
-
-    case "calidad":
-      return renderCalidad(value);
-
-    case "rounds":
-      return `<span class="rounds-badge">${esc(value)}</span>`;
-
-    case "specialist-note":
-      return `<div class="text-truncate text-small" title="${esc(value)}">${esc(value)}</div>`;
-
+    case "daterange": return `<span class="date-range">📅 ${esc(value)}</span>`;
+    case "date": return `<span class="date-range">${esc(value)}</span>`;
+    case "estado": return renderEstado(value);
+    case "calidad": return renderCalidad(value);
+    case "rounds": return `<span class="rounds-badge">${esc(value)}</span>`;
+    case "specialist-note": return `<div class="text-truncate text-small" title="${esc(value)}">${esc(value)}</div>`;
     case "text":
-    default:
-      return `<div class="text-truncate" title="${esc(value)}">${esc(value)}</div>`;
+    default: return `<div class="text-truncate" title="${esc(value)}">${esc(value)}</div>`;
   }
 }
 
 function renderTitleCell(value, row, meta) {
   const safeTitle = esc(value || "Untitled");
-
+  
   if (meta.isSubitem) {
     return `
       <div class="task-title-wrap task-title-wrap--subitem">
@@ -1058,6 +921,9 @@ function renderTitleCell(value, row, meta) {
   const children = getSubitemsForParent(row);
   const expanded = isRowExpanded(row);
   const toggleLabel = expanded ? "Hide sub-items" : "Show sub-items";
+  
+  const isCreator = row["CreatedBy"] === currentUser?.email;
+  const canAddSubitem = isAdmin() || isCreator;
 
   return `
     <div class="task-title-wrap">
@@ -1066,29 +932,19 @@ function renderTitleCell(value, row, meta) {
       </button>
       <div class="task-title" title="${safeTitle}">${safeTitle}</div>
       ${children.length ? `<span class="subitem-count" title="${children.length} sub-items">${children.length}</span>` : ""}
-      <button type="button" class="subitem-mini-add" data-start-subitem="${esc(row.__clientKey)}" title="Add sub-item">＋</button>
+      ${canAddSubitem ? `<button type="button" class="subitem-mini-add" data-start-subitem="${esc(row.__clientKey)}" title="Add sub-item">＋</button>` : ""}
     </div>
   `;
 }
 
 function renderTipoBadge(val) {
-  const map = {
-    "PROJECT": "badge--project",
-    "PERPETUAL": "badge--perpetual",
-    "ON-DEMAND": "badge--ondemand"
-  };
+  const map = { "PROJECT": "badge--project", "PERPETUAL": "badge--perpetual", "ON-DEMAND": "badge--ondemand" };
   const cls = map[String(val).toUpperCase()] || "badge--notstarted";
   return `<span class="badge ${cls}">${esc(val)}</span>`;
 }
 
 function renderVerticalBadge(val) {
-  const map = {
-    "academy": "badge--academy",
-    "school": "badge--school",
-    "e-moa": "badge--emoa",
-    "afterschool": "badge--afterschool",
-    "in-company": "badge--incompany"
-  };
+  const map = { "academy": "badge--academy", "school": "badge--school", "e-moa": "badge--emoa", "afterschool": "badge--afterschool", "in-company": "badge--incompany" };
   const key = String(val).toLowerCase().replace(/\s+/g, "-");
   const cls = map[key] || "badge--academy";
   return `<span class="badge ${cls}">${esc(val)}</span>`;
@@ -1107,14 +963,7 @@ function renderAvatarChip(name, idx) {
 
 function renderEstado(val) {
   const key = String(val).toLowerCase().replace(/\s+/g, "");
-  const map = {
-    "notstarted": "notstarted",
-    "inprogress": "inprogress",
-    "standby": "standby",
-    "blocked": "blocked",
-    "done": "done",
-    "delayeddone": "delayeddone"
-  };
+  const map = { "notstarted": "notstarted", "inprogress": "inprogress", "standby": "standby", "blocked": "blocked", "done": "done", "delayeddone": "delayeddone" };
   const slug = map[key] || "notstarted";
   return `
     <span class="status-pill status-pill--${slug}">
@@ -1138,47 +987,26 @@ function renderCalidad(val) {
 }
 
 function splitMulti(value) {
-  return String(value || "")
-    .split(",")
-    .map(s => s.trim())
-    .filter(Boolean);
+  return String(value || "").split(",").map(s => s.trim()).filter(Boolean);
 }
 
 function esc(str) {
-  return String(str)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+  return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
 function slugify(value) {
-  return String(value || "")
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "") || "row";
+  return String(value || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "row";
 }
 
 // ─── Inline editing ─────────────────────────────────────────────────────────
-// IMPORTANT: this listener is attached ONCE to the parent <tbody> (event
-// delegation). We never attach listeners to individual .editable-cell
-// elements, since those are destroyed/recreated on every renderTable() call.
 function initInlineEditing() {
   const tbody = document.getElementById("table-body");
 
   tbody.addEventListener("click", e => {
-    // Let dedicated controls (row selector, subitem buttons, the create-
-    // subitem input, etc.) handle their own clicks.
     if (e.target.closest("[data-row-select], [data-toggle-subitems], [data-start-subitem], [data-save-subitem], [data-cancel-subitem], .subitem-create-input")) return;
 
     const td = e.target.closest("td.editable-cell");
     if (!td) return;
-
-    // Clicked inside a cell that's already in edit mode (e.g. on its
-    // save/cancel buttons or an input) — those have their own handlers,
-    // so do nothing here to avoid reopening/clobbering the active editor.
     if (td.classList.contains("editing") || e.target.closest(".inline-editor")) return;
 
     openEditor(td.dataset.rowKey, td.dataset.key, td.dataset.type);
@@ -1261,8 +1089,6 @@ function initSubitemInteractions() {
 }
 
 function openEditor(rowKey, key, type) {
-  // If another cell is currently being edited, close it first. This
-  // re-renders the table, which destroys and recreates every <td>.
   if (activeEditor) {
     activeEditor = null;
     renderTable(filteredData);
@@ -1271,11 +1097,6 @@ function openEditor(rowKey, key, type) {
   const row = getRowByClientKey(rowKey);
   if (!row) return;
 
-  // Always grab a FRESH reference to the cell from the live DOM, taken
-  // AFTER the render above. Reusing a <td> captured before that render
-  // (the old bug) points at a detached node that's no longer on screen,
-  // so the edits silently went nowhere — this is what made clicking feel
-  // unresponsive after the first cell was opened.
   const td = document.querySelector(
     `td.editable-cell[data-row-key="${cssEscape(rowKey)}"][data-key="${cssEscape(key)}"]`
   );
@@ -1311,9 +1132,6 @@ function openEditor(rowKey, key, type) {
 
   const firstInput = td.querySelector("input, textarea");
   if (firstInput) {
-    // Focus is set synchronously, right after the editor markup is
-    // inserted, so there's no intermediate blur/focus flicker that could
-    // re-trigger the delegated click handler or close the editor early.
     firstInput.focus();
     if (firstInput.select) firstInput.select();
   }
@@ -1356,7 +1174,6 @@ function openEditor(rowKey, key, type) {
   });
 }
 
-// Minimal CSS.escape fallback for environments where it's unavailable.
 function cssEscape(value) {
   if (window.CSS && typeof CSS.escape === "function") return CSS.escape(value);
   return String(value).replace(/[^a-zA-Z0-9_-]/g, "\\$&");
@@ -1431,9 +1248,7 @@ function getEditorHTML(value, type, key) {
     `;
   }
 
-  const isLongText =
-    ["Brief Description", "Comments"].includes(key) ||
-    type === "specialist-note";
+  const isLongText = ["Brief Description", "Comments"].includes(key) || type === "specialist-note";
 
   if (isLongText) {
     return `
@@ -1514,24 +1329,18 @@ function parseDateToInput(value) {
 function formatDateForDisplay(inputDate) {
   const date = new Date(`${inputDate}T00:00:00`);
   if (Number.isNaN(date.getTime())) return inputDate;
-  return date.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric"
-  });
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
 // ─── Sort + Filter + Search ───────────────────────────────────────────────
 function handleSort(key) {
   if (activeEditor) activeEditor = null;
-
   if (sortKey === key) {
     sortDir = sortDir === "asc" ? "desc" : "asc";
   } else {
     sortKey = key;
     sortDir = "asc";
   }
-
   applyCurrentFiltersAndRender();
   renderSortPanel();
   updateToolbarButtons();
@@ -1573,10 +1382,7 @@ function applySortToRows(rows) {
       if (av.type === "number" || bv.type === "number") {
         result = Number(av.value) - Number(bv.value);
       } else {
-        result = String(av.value).localeCompare(String(bv.value), undefined, {
-          numeric: true,
-          sensitivity: "base"
-        });
+        result = String(av.value).localeCompare(String(bv.value), undefined, { numeric: true, sensitivity: "base" });
       }
 
       if (result === 0) return a.index - b.index;
@@ -1588,47 +1394,35 @@ function applySortToRows(rows) {
 function getComparableSortValue(row, key) {
   if (key === "__nextDeadline") {
     const nextDate = getNextDeadlineDate(row);
-    return nextDate
-      ? { value: nextDate.getTime(), type: "number", empty: false }
-      : { value: "", type: "text", empty: true };
+    return nextDate ? { value: nextDate.getTime(), type: "number", empty: false } : { value: "", type: "text", empty: true };
   }
 
   if (DEADLINE_KEYS.includes(key) || key === "Fecha de Inicio y Fin") {
     const raw = key === "Fecha de Inicio y Fin" ? parseDateRange(row[key] || "")[0] : row[key];
     const date = parseFlexibleDate(raw);
-    return date
-      ? { value: date.getTime(), type: "number", empty: false }
-      : { value: "", type: "text", empty: true };
+    return date ? { value: date.getTime(), type: "number", empty: false } : { value: "", type: "text", empty: true };
   }
 
   if (key === "Estado") {
     const value = String(row[key] || "").trim();
     const index = OPTIONS.estado.findIndex(option => normalizeText(option) === normalizeText(value));
-    return value
-      ? { value: index === -1 ? 999 : index, type: "number", empty: false }
-      : { value: "", type: "text", empty: true };
+    return value ? { value: index === -1 ? 999 : index, type: "number", empty: false } : { value: "", type: "text", empty: true };
   }
 
   if (key === "Tipo de trabajo") {
     const value = String(row[key] || "").trim();
     const index = OPTIONS.tipo.findIndex(option => normalizeText(option) === normalizeText(value));
-    return value
-      ? { value: index === -1 ? value : index, type: index === -1 ? "text" : "number", empty: false }
-      : { value: "", type: "text", empty: true };
+    return value ? { value: index === -1 ? value : index, type: index === -1 ? "text" : "number", empty: false } : { value: "", type: "text", empty: true };
   }
 
   if (key === "Rondas de revisión") {
     const raw = String(row[key] || "").trim();
     const number = Number(raw.replace(/[^0-9.-]/g, ""));
-    return Number.isFinite(number) && raw
-      ? { value: number, type: "number", empty: false }
-      : { value: "", type: "text", empty: true };
+    return Number.isFinite(number) && raw ? { value: number, type: "number", empty: false } : { value: "", type: "text", empty: true };
   }
 
   const value = String(row[key] || "").trim();
-  return value
-    ? { value: normalizeText(value), type: "text", empty: false }
-    : { value: "", type: "text", empty: true };
+  return value ? { value: normalizeText(value), type: "text", empty: false } : { value: "", type: "text", empty: true };
 }
 
 function handleSearch(query) {
@@ -1740,10 +1534,7 @@ function matchesDeadlineFilters(row) {
 }
 
 function getRowDeadlineDates(row) {
-  return DEADLINE_KEYS
-    .map(key => parseFlexibleDate(row[key]))
-    .filter(Boolean)
-    .sort((a, b) => a - b);
+  return DEADLINE_KEYS.map(key => parseFlexibleDate(row[key])).filter(Boolean).sort((a, b) => a - b);
 }
 
 function getNextDeadlineDate(row) {
@@ -1764,25 +1555,15 @@ function isRowComplete(row) {
 }
 
 function normalizeText(value) {
-  return String(value || "")
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
+  return String(value || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").trim();
 }
 
-function hasActiveFilters() {
-  return countActiveFilters() > 0;
-}
+function hasActiveFilters() { return countActiveFilters() > 0; }
 
 function countActiveFilters() {
-  const setCount = ["tipo", "estado", "vertical", "specialists", "calidad"]
-    .reduce((total, key) => total + activeFilters[key].size, 0);
-
+  const setCount = ["tipo", "estado", "vertical", "specialists", "calidad"].reduce((total, key) => total + activeFilters[key].size, 0);
   const deadlineCount = activeFilters.deadlineMode !== "all" ? 1 : 0;
   const dateCount = (activeFilters.dateFrom ? 1 : 0) + (activeFilters.dateTo ? 1 : 0);
-
   return setCount + deadlineCount + dateCount;
 }
 
@@ -1796,10 +1577,7 @@ function clearFilters() {
 function getAvailableFilterOptions(filterName) {
   const config = FILTER_CONFIG[filterName];
   const values = new Map();
-
-  (config.options || []).forEach(option => {
-    values.set(normalizeText(option), option);
-  });
+  (config.options || []).forEach(option => { values.set(normalizeText(option), option); });
 
   allData.forEach(row => {
     const raw = String(row[config.key] || "").trim();
@@ -1818,9 +1596,7 @@ function getFilterOptionCount(filterName, option) {
   return allData.filter(row => {
     const raw = String(row[config.key] || "").trim();
     if (!raw) return false;
-    if (config.multiple) {
-      return splitMulti(raw).some(value => normalizeText(value) === normalizeText(option));
-    }
+    if (config.multiple) return splitMulti(raw).some(value => normalizeText(value) === normalizeText(option));
     return normalizeText(raw) === normalizeText(option);
   }).length;
 }
@@ -1892,22 +1668,11 @@ function renderFilterSummary() {
     });
   });
 
-  if (activeFilters.deadlineMode !== "all") {
-    chips.push(`<button type="button" class="filter-chip" data-deadline-mode="all">${esc(getDeadlineModeLabel(activeFilters.deadlineMode))} <span>×</span></button>`);
-  }
+  if (activeFilters.deadlineMode !== "all") chips.push(`<button type="button" class="filter-chip" data-deadline-mode="all">${esc(getDeadlineModeLabel(activeFilters.deadlineMode))} <span>×</span></button>`);
+  if (activeFilters.dateFrom) chips.push(`<button type="button" class="filter-chip" data-clear-date="from">From ${esc(activeFilters.dateFrom)} <span>×</span></button>`);
+  if (activeFilters.dateTo) chips.push(`<button type="button" class="filter-chip" data-clear-date="to">To ${esc(activeFilters.dateTo)} <span>×</span></button>`);
 
-  if (activeFilters.dateFrom) {
-    chips.push(`<button type="button" class="filter-chip" data-clear-date="from">From ${esc(activeFilters.dateFrom)} <span>×</span></button>`);
-  }
-
-  if (activeFilters.dateTo) {
-    chips.push(`<button type="button" class="filter-chip" data-clear-date="to">To ${esc(activeFilters.dateTo)} <span>×</span></button>`);
-  }
-
-  if (!chips.length) {
-    return `<div class="filter-summary filter-summary--empty">No active filters. Add one to narrow the table or calendar.</div>`;
-  }
-
+  if (!chips.length) return `<div class="filter-summary filter-summary--empty">No active filters. Add one to narrow the table or calendar.</div>`;
   return `<div class="filter-summary">${chips.join("")}</div>`;
 }
 
@@ -1941,15 +1706,7 @@ function renderDeadlineModeOption(value, label) {
 }
 
 function getDeadlineModeLabel(value) {
-  const map = {
-    all: "All deadlines",
-    has_deadline: "Has any deadline",
-    no_deadline: "No deadline",
-    overdue: "Overdue",
-    due_7: "Due in 7 days",
-    due_30: "Due in 30 days",
-    this_month: "Due this month"
-  };
+  const map = { all: "All deadlines", has_deadline: "Has any deadline", no_deadline: "No deadline", overdue: "Overdue", due_7: "Due in 7 days", due_30: "Due in 30 days", this_month: "Due this month" };
   return map[value] || value;
 }
 
@@ -2047,21 +1804,8 @@ function initToolbarPanels() {
   const filterPanel = document.getElementById("filter-panel");
   const sortPanel = document.getElementById("sort-panel");
 
-  if (filterBtn) {
-    filterBtn.addEventListener("click", e => {
-      e.preventDefault();
-      e.stopPropagation();
-      toggleToolbarPanel("filter");
-    });
-  }
-
-  if (sortBtn) {
-    sortBtn.addEventListener("click", e => {
-      e.preventDefault();
-      e.stopPropagation();
-      toggleToolbarPanel("sort");
-    });
-  }
+  if (filterBtn) filterBtn.addEventListener("click", e => { e.preventDefault(); e.stopPropagation(); toggleToolbarPanel("filter"); });
+  if (sortBtn) sortBtn.addEventListener("click", e => { e.preventDefault(); e.stopPropagation(); toggleToolbarPanel("sort"); });
 
   if (filterPanel) {
     filterPanel.addEventListener("change", e => {
@@ -2142,27 +1886,13 @@ function initToolbarPanels() {
 
   if (sortPanel) {
     sortPanel.addEventListener("change", e => {
-      if (e.target.id === "sort-field") {
-        setSort(e.target.value, sortDir);
-        return;
-      }
-
-      if (e.target.name === "sort-direction") {
-        setSort(sortKey, e.target.value);
-      }
+      if (e.target.id === "sort-field") { setSort(e.target.value, sortDir); return; }
+      if (e.target.name === "sort-direction") { setSort(sortKey, e.target.value); }
     });
 
     sortPanel.addEventListener("click", e => {
-      if (e.target.closest("[data-clear-sort]")) {
-        e.preventDefault();
-        clearSort();
-        return;
-      }
-
-      if (e.target.closest("[data-close-toolbar]")) {
-        e.preventDefault();
-        closeToolbarPanels();
-      }
+      if (e.target.closest("[data-clear-sort]")) { e.preventDefault(); clearSort(); return; }
+      if (e.target.closest("[data-close-toolbar]")) { e.preventDefault(); closeToolbarPanels(); }
     });
   }
 
@@ -2190,33 +1920,10 @@ function initCalendarView() {
 
   populateCalendarSpecialistFilter();
 
-  if (prev) {
-    prev.addEventListener("click", () => {
-      calendarDate = new Date(calendarDate.getFullYear(), calendarDate.getMonth() - 1, 1);
-      renderCalendar();
-    });
-  }
-
-  if (next) {
-    next.addEventListener("click", () => {
-      calendarDate = new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1, 1);
-      renderCalendar();
-    });
-  }
-
-  if (today) {
-    today.addEventListener("click", () => {
-      calendarDate = new Date();
-      renderCalendar();
-    });
-  }
-
-  if (specialistFilter) {
-    specialistFilter.addEventListener("change", () => {
-      calendarSpecialistFilter = specialistFilter.value || "all";
-      renderCalendar();
-    });
-  }
+  if (prev) prev.addEventListener("click", () => { calendarDate = new Date(calendarDate.getFullYear(), calendarDate.getMonth() - 1, 1); renderCalendar(); });
+  if (next) next.addEventListener("click", () => { calendarDate = new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1, 1); renderCalendar(); });
+  if (today) today.addEventListener("click", () => { calendarDate = new Date(); renderCalendar(); });
+  if (specialistFilter) specialistFilter.addEventListener("change", () => { calendarSpecialistFilter = specialistFilter.value || "all"; renderCalendar(); });
 
   [board, sidebar].forEach(target => {
     if (!target) return;
@@ -2294,9 +2001,6 @@ function getCalendarItems() {
     const title = String(row["TASKS"] || "Untitled").trim();
     if (!title) return;
 
-    // A parent task that already has sub-items should not appear on the calendar
-    // itself — only its sub-items should render, to avoid duplicate cards on the
-    // same dates. Standalone tasks (no sub-items) still render as before.
     if (!isSubitem(row) && getSubitemsForParent(row).length > 0) return;
 
     ["Deadline 1", "Deadline 2", "Deadline 3", "Deadline 4"].forEach((key, index) => {
@@ -2322,29 +2026,15 @@ function getCalendarItems() {
 
     if (startDate && startDate >= visibleStart && startDate <= visibleEnd) {
       items.push({
-        row,
-        date: startDate,
-        endDate: null,
-        type: "workflow",
-        dateKey: "Fecha de Inicio y Fin",
-        label: "Inicio",
-        title,
-        specialists: splitMulti(row["Specialists"]),
-        status: row["Estado"] || "Not started"
+        row, date: startDate, endDate: null, type: "workflow", dateKey: "Fecha de Inicio y Fin", label: "Inicio",
+        title, specialists: splitMulti(row["Specialists"]), status: row["Estado"] || "Not started"
       });
     }
 
     if (endDate && endDate >= visibleStart && endDate <= visibleEnd) {
       items.push({
-        row,
-        date: endDate,
-        endDate: null,
-        type: "workflow",
-        dateKey: "Fecha de Inicio y Fin",
-        label: "Fin",
-        title,
-        specialists: splitMulti(row["Specialists"]),
-        status: row["Estado"] || "Not started"
+        row, date: endDate, endDate: null, type: "workflow", dateKey: "Fecha de Inicio y Fin", label: "Fin",
+        title, specialists: splitMulti(row["Specialists"]), status: row["Estado"] || "Not started"
       });
     }
   });
@@ -2420,10 +2110,7 @@ function renderActiveDeadlines(items) {
     .slice(0, 14);
 
   if (!deadlines.length) {
-    deadlines = items
-      .filter(item => item.type === "deadline")
-      .sort((a, b) => a.date - b.date)
-      .slice(0, 10);
+    deadlines = items.filter(item => item.type === "deadline").sort((a, b) => a.date - b.date).slice(0, 10);
   }
 
   if (!deadlines.length) {
@@ -2455,32 +2142,27 @@ function renderActiveDeadlines(items) {
 }
 
 function renderSpecialistLanes(items) {
-  const specialists = calendarSpecialistFilter === "all"
-    ? OPTIONS.specialists
-    : [calendarSpecialistFilter];
-
+  const specialists = calendarSpecialistFilter === "all" ? OPTIONS.specialists : [calendarSpecialistFilter];
   const monthItems = items.filter(item => item.date.getMonth() === calendarDate.getMonth());
-  const lanes = specialists
-    .map(name => {
-      const assigned = monthItems.filter(item => item.specialists.includes(name));
-      if (!assigned.length && calendarSpecialistFilter !== name) return "";
-      const visible = assigned.slice(0, 5);
-      return `
-        <div class="specialist-lane">
-          <div class="specialist-lane__person">
-            <span>${esc(getInitials(name))}</span>
-            <strong>${esc(name)}</strong>
-            <em>${assigned.length} item${assigned.length === 1 ? "" : "s"}</em>
-          </div>
-          <div class="specialist-lane__items">
-            ${visible.length ? visible.map(item => renderLaneChip(item)).join("") : `<span class="lane-empty">No scheduled items this month</span>`}
-            ${assigned.length > visible.length ? `<span class="lane-more">+${assigned.length - visible.length} more</span>` : ""}
-          </div>
+  
+  const lanes = specialists.map(name => {
+    const assigned = monthItems.filter(item => item.specialists.includes(name));
+    if (!assigned.length && calendarSpecialistFilter !== name) return "";
+    const visible = assigned.slice(0, 5);
+    return `
+      <div class="specialist-lane">
+        <div class="specialist-lane__person">
+          <span>${esc(getInitials(name))}</span>
+          <strong>${esc(name)}</strong>
+          <em>${assigned.length} item${assigned.length === 1 ? "" : "s"}</em>
         </div>
-      `;
-    })
-    .filter(Boolean)
-    .join("");
+        <div class="specialist-lane__items">
+          ${visible.length ? visible.map(item => renderLaneChip(item)).join("") : `<span class="lane-empty">No scheduled items this month</span>`}
+          ${assigned.length > visible.length ? `<span class="lane-more">+${assigned.length - visible.length} more</span>` : ""}
+        </div>
+      </div>
+    `;
+  }).filter(Boolean).join("");
 
   if (!lanes) {
     return `
@@ -2515,7 +2197,6 @@ function openCalendarTaskInTable(row) {
     input.value = title;
     currentSearchQuery = title.toLowerCase();
   }
-
   setActiveTab("all-tasks");
 }
 
@@ -2545,9 +2226,7 @@ function parseFlexibleDate(value) {
   return stripTime(parsed);
 }
 
-function stripTime(date) {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
-}
+function stripTime(date) { return new Date(date.getFullYear(), date.getMonth(), date.getDate()); }
 
 function dateToISO(date) {
   const d = stripTime(date);
@@ -2564,14 +2243,7 @@ function formatCalendarDate(date) {
 
 function getEstadoSlug(val) {
   const key = String(val || "").toLowerCase().replace(/\s+/g, "");
-  const map = {
-    "notstarted": "notstarted",
-    "inprogress": "inprogress",
-    "standby": "standby",
-    "blocked": "blocked",
-    "done": "done",
-    "delayeddone": "delayeddone"
-  };
+  const map = { "notstarted": "notstarted", "inprogress": "inprogress", "standby": "standby", "blocked": "blocked", "done": "done", "delayeddone": "delayeddone" };
   return map[key] || "notstarted";
 }
 
@@ -2612,9 +2284,7 @@ function setActiveTab(tabName) {
 
 function initTabs() {
   const tabs = document.querySelectorAll(".tab");
-  tabs.forEach(tab => {
-    tab.addEventListener("click", () => setActiveTab(tab.dataset.tab));
-  });
+  tabs.forEach(tab => { tab.addEventListener("click", () => setActiveTab(tab.dataset.tab)); });
 }
 
 // ─── Toolbar ────────────────────────────────────────────────────────────────
@@ -2633,9 +2303,7 @@ function initToolbar() {
     searchInput.addEventListener("input", () => handleSearch(searchInput.value));
   }
 
-  if (newBtn) {
-    newBtn.addEventListener("click", () => setActiveTab("submit"));
-  }
+  if (newBtn) newBtn.addEventListener("click", () => setActiveTab("submit"));
 }
 
 // ─── Vertical multi-picker (form) ───────────────────────────────────────────
@@ -2659,9 +2327,7 @@ function initVerticalPicker() {
     list.querySelectorAll(".people-option").forEach(btn => {
       btn.addEventListener("click", () => {
         const v = btn.dataset.vertical;
-        createSelectedVerticals.has(v)
-          ? createSelectedVerticals.delete(v)
-          : createSelectedVerticals.add(v);
+        createSelectedVerticals.has(v) ? createSelectedVerticals.delete(v) : createSelectedVerticals.add(v);
         updateVerticalUI();
         renderOptions();
       });
@@ -2777,11 +2443,10 @@ function initSubmitForm() {
     row["TASKS"] = String(formData.get("TASKS") || "").trim();
     row["Tipo de trabajo"] = String(formData.get("Tipo de trabajo") || "").trim();
     row["Vertical"] = String(formData.get("Vertical") || "").trim();
-    row["Specialists"] =
-      Array.from(createSelectedSpecialists).join(", ") ||
-      String(formData.get("Specialists") || "").trim();
+    row["Specialists"] = Array.from(createSelectedSpecialists).join(", ") || String(formData.get("Specialists") || "").trim();
     row["Brief Description"] = String(formData.get("Brief Description") || "").trim();
     row["Estado"] = "Not started";
+    row["CreatedBy"] = currentUser.email; // INSTANT OWNERSHIP
 
     const startRaw = String(formData.get("Fecha de inicio") || "").trim();
     const endRaw = String(formData.get("Fecha final") || "").trim();
@@ -2931,14 +2596,7 @@ function updateCreateSpecialistsUI() {
 }
 
 function getInitials(name) {
-  return String(name)
-    .replace(/^MOA\s*-\s*/i, "")
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map(part => part[0] || "")
-    .join("")
-    .toUpperCase();
+  return String(name).replace(/^MOA\s*-\s*/i, "").split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0] || "").join("").toUpperCase();
 }
 
 // ─── Toast ──────────────────────────────────────────────────────────────────
@@ -2961,13 +2619,10 @@ function showToast(message, type = "success") {
 async function initAuth() {
   try {
     const res = await fetch("/api/auth/me", { credentials: "same-origin" });
-
     if (res.status === 401) {
-      // Not logged in — show login screen
       renderLoginScreen();
       return false;
     }
-
     if (!res.ok) throw new Error(`Auth check failed: ${res.status}`);
 
     currentUser = await res.json();
@@ -2982,29 +2637,12 @@ async function initAuth() {
 
 function renderLoginScreen() {
   document.body.innerHTML = `
-    <div style="
-      min-height:100vh;display:flex;align-items:center;justify-content:center;
-      background:#f7f6f3;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-    ">
-      <div style="
-        background:#fff;border:1px solid #e9e9e7;border-radius:12px;
-        padding:48px 40px;max-width:380px;width:100%;text-align:center;
-        box-shadow:0 4px 24px rgba(0,0,0,0.07);
-      ">
+    <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f7f6f3;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+      <div style="background:#fff;border:1px solid #e9e9e7;border-radius:12px;padding:48px 40px;max-width:380px;width:100%;text-align:center;box-shadow:0 4px 24px rgba(0,0,0,0.07);">
         <div style="font-size:36px;margin-bottom:16px;">🎓</div>
-        <h1 style="font-size:22px;font-weight:700;color:#37352f;margin-bottom:6px;">
-          Specialists Dashboard
-        </h1>
-        <p style="color:#787774;font-size:14px;margin-bottom:32px;">
-          MOA Education · Acceso restringido al equipo
-        </p>
-        <a href="/api/auth/login" style="
-          display:inline-flex;align-items:center;gap:10px;
-          padding:12px 24px;border-radius:8px;text-decoration:none;
-          background:#4285f4;color:#fff;font-size:14px;font-weight:600;
-          box-shadow:0 2px 8px rgba(66,133,244,0.3);
-          transition:background 0.15s;
-        ">
+        <h1 style="font-size:22px;font-weight:700;color:#37352f;margin-bottom:6px;">Specialists Dashboard</h1>
+        <p style="color:#787774;font-size:14px;margin-bottom:32px;">MOA Education · Acceso restringido al equipo</p>
+        <a href="/api/auth/login" style="display:inline-flex;align-items:center;gap:10px;padding:12px 24px;border-radius:8px;text-decoration:none;background:#4285f4;color:#fff;font-size:14px;font-weight:600;box-shadow:0 2px 8px rgba(66,133,244,0.3);transition:background 0.15s;">
           <svg width="18" height="18" viewBox="0 0 48 48">
             <path fill="#FFF" d="M43.6 20H24v8.4h11.1C33.8 33.7 29.4 37 24 37c-7.2 0-13-5.8-13-13s5.8-13 13-13c3.1 0 5.9 1.1 8.1 2.9l6.1-6.1C34.6 5.1 29.6 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21c10.9 0 20-7.9 20-21 0-1.3-.1-2.7-.4-4z"/>
           </svg>
@@ -3025,7 +2663,7 @@ function getAuthErrorMessage() {
     unauthorized_domain: `La cuenta ${email ? `<strong>${email}</strong>` : ""} no pertenece al dominio de MOA Education.`,
     not_in_team: `La cuenta ${email ? `<strong>${email}</strong>` : ""} no está registrada en el equipo.`,
     token_exchange_failed: "Error al comunicarse con Google. Intenta de nuevo.",
-    server_error: "Error interno. Contacta a Victor o Luis Fernando.",
+    server_error: "Error interno. Contacta al administrador.",
     missing_code: "Flujo de autenticación interrumpido. Intenta de nuevo."
   };
 
@@ -3038,38 +2676,19 @@ function renderUserBadge(user) {
   const header = document.querySelector(".page-header");
   if (!header) return;
 
-  // Remove any existing badge
   header.querySelector(".user-badge")?.remove();
 
-  const initials = (user.name || user.email || "?")
-    .split(/\s+/)
-    .slice(0, 2)
-    .map(p => p[0] || "")
-    .join("")
-    .toUpperCase();
+  const initials = (user.name || user.email || "?").split(/\s+/).slice(0, 2).map(p => p[0] || "").join("").toUpperCase();
 
   const badge = document.createElement("div");
   badge.className = "user-badge";
-  badge.style.cssText = `
-    margin-left:auto;display:flex;align-items:center;gap:8px;
-    padding:4px 12px 4px 4px;border:1px solid #e9e9e7;border-radius:999px;
-    background:#fff;cursor:pointer;font-size:13px;color:#37352f;
-    transition:background 0.1s;
-  `;
+  badge.style.cssText = `margin-left:auto;display:flex;align-items:center;gap:8px;padding:4px 12px 4px 4px;border:1px solid #e9e9e7;border-radius:999px;background:#fff;cursor:pointer;font-size:13px;color:#37352f;transition:background 0.1s;`;
   badge.title = `${user.name} (${user.role === "admin" ? "Administrador" : "Especialista"}) — Cerrar sesión`;
   badge.innerHTML = `
-    ${user.picture
-      ? `<img src="${user.picture}" style="width:24px;height:24px;border-radius:50%;flex-shrink:0;" referrerpolicy="no-referrer">`
-      : `<div style="width:24px;height:24px;border-radius:50%;background:#007aff;color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;">${initials}</div>`
-    }
+    ${user.picture ? `<img src="${user.picture}" style="width:24px;height:24px;border-radius:50%;flex-shrink:0;" referrerpolicy="no-referrer">` : `<div style="width:24px;height:24px;border-radius:50%;background:#007aff;color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;">${initials}</div>`}
     <span>${user.name || user.email}</span>
-    <span style="
-      background:${user.role === "admin" ? "#007aff" : "#10b981"};
-      color:#fff;font-size:10px;font-weight:600;padding:1px 7px;border-radius:999px;
-    ">${user.role === "admin" ? "Admin" : "Especialista"}</span>
-    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style="opacity:0.5">
-      <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-    </svg>
+    <span style="background:${user.role === "admin" ? "#007aff" : "#10b981"};color:#fff;font-size:10px;font-weight:600;padding:1px 7px;border-radius:999px;">${user.role === "admin" ? "Admin" : "Especialista"}</span>
+    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style="opacity:0.5"><path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
   `;
 
   let menu = null;
@@ -3078,20 +2697,8 @@ function renderUserBadge(user) {
     if (menu) { menu.remove(); menu = null; return; }
 
     menu = document.createElement("div");
-    menu.style.cssText = `
-      position:fixed;top:${badge.getBoundingClientRect().bottom + 6}px;
-      right:24px;background:#fff;border:1px solid #e9e9e7;border-radius:8px;
-      box-shadow:0 4px 16px rgba(0,0,0,0.1);z-index:1000;min-width:180px;
-      padding:4px 0;font-size:13px;
-    `;
-    menu.innerHTML = `
-      <div style="padding:10px 14px;border-bottom:1px solid #f0f0ef;color:#787774;font-size:12px;">
-        ${user.email}
-      </div>
-      <a href="/api/auth/logout" style="
-        display:block;padding:10px 14px;color:#c0392b;text-decoration:none;
-      ">Cerrar sesión</a>
-    `;
+    menu.style.cssText = `position:fixed;top:${badge.getBoundingClientRect().bottom + 6}px;right:24px;background:#fff;border:1px solid #e9e9e7;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.1);z-index:1000;min-width:180px;padding:4px 0;font-size:13px;`;
+    menu.innerHTML = `<div style="padding:10px 14px;border-bottom:1px solid #f0f0ef;color:#787774;font-size:12px;">${user.email}</div><a href="/api/auth/logout" style="display:block;padding:10px 14px;color:#c0392b;text-decoration:none;">Cerrar sesión</a>`;
     document.body.appendChild(menu);
 
     const closeMenu = () => { menu?.remove(); menu = null; document.removeEventListener("click", closeMenu); };
@@ -3102,10 +2709,9 @@ function renderUserBadge(user) {
 }
 
 // ─── Apply RBAC to the rendered table UI ─────────────────────────────────────
-// Called after renderTable to grey out cells the current user can't edit.
 function applyRbacToTable() {
   if (!currentUser) return;
-  if (isAdmin()) return; // Admins see everything editable
+  if (isAdmin()) return; 
 
   const DEADLINE_KEYS = ["Deadline 1", "Deadline 2", "Deadline 3", "Deadline 4"];
   const myKey = getMySpecialistKey();
@@ -3120,7 +2726,6 @@ function applyRbacToTable() {
     let canEdit = false;
 
     if (isAdmin() || isCreator) {
-      // El creador o admin pueden editar, excepto bloquear columnas críticas para especialistas
       if (!isAdmin() && DEADLINE_KEYS.includes(colKey)) {
         canEdit = false;
       } else if (!isAdmin() && colKey === "Calidad") {
@@ -3129,7 +2734,6 @@ function applyRbacToTable() {
         canEdit = true;
       }
     } else {
-      // Lógica normal para quienes no crearon la tarea
       if (colKey === "Estado") {
         canEdit = myKey && assignedSpecialists.includes(myKey.toLowerCase());
       } else if (myKey && colKey === myKey) {
@@ -3150,7 +2754,7 @@ function applyRbacToTable() {
 // ─── Boot ───────────────────────────────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", async () => {
   const authenticated = await initAuth();
-  if (!authenticated) return; // login screen is showing
+  if (!authenticated) return;
 
   initTabs();
   initToolbar();
@@ -3161,5 +2765,4 @@ document.addEventListener("DOMContentLoaded", async () => {
   initCalendarView();
   initSubmitForm();
   await fetchData();
-  // applyRbacToTable is called inside renderTable after it builds the DOM
 });

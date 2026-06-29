@@ -1315,20 +1315,17 @@ function parseDateRange(value) {
 }
 
 function parseDateToInput(value) {
-  if (!value) return "";
-  const clean = String(value).trim();
-  if (/^\d{4}-\d{2}-\d{2}$/.test(clean)) return clean;
-  const parsed = new Date(clean);
-  if (Number.isNaN(parsed.getTime())) return "";
-  const yyyy = parsed.getFullYear();
-  const mm = String(parsed.getMonth() + 1).padStart(2, "0");
-  const dd = String(parsed.getDate()).padStart(2, "0");
+  const date = parseFlexibleDate(value);
+  if (!date) return "";
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
   return `${yyyy}-${mm}-${dd}`;
 }
 
 function formatDateForDisplay(inputDate) {
-  const date = new Date(`${inputDate}T00:00:00`);
-  if (Number.isNaN(date.getTime())) return inputDate;
+  const date = parseFlexibleDate(inputDate);
+  if (!date) return inputDate;
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
@@ -2216,11 +2213,29 @@ function parseFlexibleDate(value) {
   const clean = String(value || "").trim();
   if (!clean) return null;
 
+  // 1. Si ya viene en formato informático YYYY-MM-DD
   if (/^\d{4}-\d{2}-\d{2}$/.test(clean)) {
     const parsed = new Date(`${clean}T00:00:00`);
     return Number.isNaN(parsed.getTime()) ? null : stripTime(parsed);
   }
 
+  // 2. Traductor a prueba de balas para Google Sheets (ej. "Jun 19, 2026" o "June 19 2026")
+  // Forzamos la creación manual para evitar saltos de día por la zona horaria de Venezuela (-04:00)
+  const monthMap = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11 };
+  const match = clean.match(/^([a-zA-Z]{3,})\s+(\d{1,2}),?\s+(\d{4})$/);
+  
+  if (match) {
+    const monthKey = match[1].substring(0, 3).toLowerCase();
+    const month = monthMap[monthKey];
+    const day = parseInt(match[2], 10);
+    const year = parseInt(match[3], 10);
+    
+    if (month !== undefined) {
+      return new Date(year, month, day); 
+    }
+  }
+
+  // 3. Fallback nativo por si es un formato totalmente distinto
   const parsed = new Date(clean);
   if (Number.isNaN(parsed.getTime())) return null;
   return stripTime(parsed);

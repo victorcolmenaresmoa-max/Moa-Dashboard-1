@@ -1,4 +1,4 @@
-// api/data/delete.js  —  DELETE a row (admins only)
+// api/data/delete.js
 const { verifySession } = require("../../lib/session");
 
 module.exports = async function handler(req, res) {
@@ -7,13 +7,29 @@ module.exports = async function handler(req, res) {
   const session = verifySession(req);
   if (!session) return res.status(401).json({ error: "Unauthorized" });
 
-  if (session.role !== "admin") {
-    return res.status(403).json({ error: "Solo los administradores pueden eliminar tareas." });
-  }
-
   const { matchColumn, matchValue } = req.body || {};
   if (!matchColumn || !matchValue) {
     return res.status(400).json({ error: "Missing matchColumn or matchValue" });
+  }
+
+  // 👇 NUEVO: Validar propiedad para los especialistas
+  if (session.role !== "admin") {
+    try {
+      const checkUrl = `${process.env.SHEETDB_URL}/search?${encodeURIComponent(matchColumn)}=${encodeURIComponent(matchValue)}`;
+      const checkRes = await fetch(checkUrl);
+      const checkData = await checkRes.json();
+
+      if (!checkData || checkData.length === 0) {
+        return res.status(404).json({ error: "Tarea no encontrada." });
+      }
+
+      const taskCreator = checkData[0]["CreatedBy"];
+      if (taskCreator !== session.email) {
+        return res.status(403).json({ error: "Solo puedes eliminar las tareas que tú creaste." });
+      }
+    } catch (err) {
+      return res.status(500).json({ error: "Error validando permisos de eliminación." });
+    }
   }
 
   try {

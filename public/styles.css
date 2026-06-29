@@ -1793,11 +1793,14 @@ max-width: 250px !important;
 }
 
 .calendar-day {
-  min-height: 142px;
+  min-height: 110px;
+  max-height: 140px; /* Límite de altura para no deformar la vista */
   padding: 9px;
   border-right: 1px solid rgba(10, 111, 120, 0.07);
   border-bottom: 1px solid rgba(10, 111, 120, 0.07);
   background: rgba(255, 255, 255, 0.62);
+  display: flex;
+  flex-direction: column;
 }
 
 .calendar-day:nth-child(7n) {
@@ -1848,6 +1851,16 @@ max-width: 250px !important;
 .calendar-day__items {
   display: grid;
   gap: 5px;
+  overflow-y: auto; /* Activa el scroll si hay muchas tareas en un día */
+  flex: 1;
+  padding-right: 2px;
+}
+
+/* Scrollbar pequeñito y estilizado para las celdas */
+.calendar-day__items::-webkit-scrollbar { width: 4px; }
+.calendar-day__items::-webkit-scrollbar-thumb { 
+  background: rgba(10, 111, 120, 0.2); 
+  border-radius: 4px; 
 }
 
 .calendar-card,

@@ -2644,7 +2644,7 @@ function renderLoginScreen() {
   const cPurple = "#4a154b";     // Estrella morada
 
   // Logo: Puedes cambiar esta URL si tienes el logo subido en tu repositorio
-  const LOGO_URL = "https://tu-dominio.com/logo-m-moa.png"; 
+  const LOGO_URL = "https://cdn.phototourl.com/free/2026-06-29-d82c7e3b-0365-4af6-94de-06a4ec1ad09f.jpg"; 
 
   document.body.innerHTML = `
     <div style="

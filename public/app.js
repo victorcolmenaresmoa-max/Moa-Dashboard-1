@@ -3205,9 +3205,9 @@ const PRODUCT_TOUR_STEPS = [
   {
     title: "Sub-items",
     body: "El triángulo junto al nombre de una tarea abre sus sub-items. El botón + permite crear subtareas al estilo Notion cuando tienes permiso.",
-    target: ".subitem-toggle, .task-title-wrap, #main-table",
+    target: ".task-parent-row .task-title-wrap, .subitem-toggle, #main-table",
     placement: "right",
-    before: () => setActiveTab("all-tasks")
+    before: () => prepareTourTableView("all-tasks")
   },
   {
     title: "Filter",
@@ -3253,8 +3253,9 @@ const PRODUCT_TOUR_STEPS = [
   {
     title: "Backlog",
     body: "Backlog es una vista más tipo Notion. Desde ahí puedes seleccionar tareas y mover a la papelera las que tú creaste.",
-    target: '[data-tab="backlog"]',
-    placement: "bottom"
+    target: ".notion-table--backlog .task-title-wrap, .notion-table--backlog, #view-all-tasks .table-wrapper",
+    placement: "top",
+    before: () => prepareTourTableView("backlog")
   },
   {
     title: "Submit a task",
@@ -3267,16 +3268,34 @@ const PRODUCT_TOUR_STEPS = [
     title: "Repetir el tutorial",
     body: "Cuando quieras volver a ver esta guía, presiona el botón Tutorial de la barra superior. La guía solo aparece automáticamente la primera vez.",
     target: "#btn-tour",
-    placement: "bottom"
+    placement: "left",
+    before: () => prepareTourTopbar()
   }
 ];
+
+function prepareTourTableView(tabName = "all-tasks") {
+  setActiveTab(tabName);
+  window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+
+  window.setTimeout(() => {
+    const wrapper = document.querySelector("#view-all-tasks .table-wrapper");
+    if (wrapper) wrapper.scrollTo({ left: 0, top: wrapper.scrollTop || 0, behavior: "auto" });
+  }, 0);
+}
+
+function prepareTourTopbar() {
+  setActiveTab("all-tasks");
+  window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+}
 
 let productTourState = {
   active: false,
   index: 0,
   forced: false,
   resizeHandler: null,
-  keyHandler: null
+  keyHandler: null,
+  scrollHandler: null,
+  ticking: false
 };
 
 function initProductTour() {
@@ -3300,7 +3319,17 @@ function initProductTour() {
     if (e.key === "ArrowLeft") previousProductTourStep();
   };
 
+  productTourState.scrollHandler = () => {
+    if (!productTourState.active || productTourState.ticking) return;
+    productTourState.ticking = true;
+    window.requestAnimationFrame(() => {
+      productTourState.ticking = false;
+      updateProductTourPosition();
+    });
+  };
+
   window.addEventListener("resize", productTourState.resizeHandler);
+  document.addEventListener("scroll", productTourState.scrollHandler, true);
   document.addEventListener("keydown", productTourState.keyHandler);
 }
 
@@ -3347,14 +3376,14 @@ function renderProductTourStep() {
     requestAnimationFrame(() => {
       const target = getProductTourTarget(step);
       if (target) {
-        target.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
+        target.scrollIntoView({ behavior: "auto", block: "center", inline: "center" });
       }
 
       window.setTimeout(() => {
         ensureProductTourDOM();
         updateProductTourContent(step);
         updateProductTourPosition();
-      }, target ? 220 : 0);
+      }, target ? 80 : 0);
     });
   });
 }
@@ -3516,18 +3545,25 @@ function updateProductTourPosition() {
 function getProductTourTarget(step) {
   if (!step || !step.target) return null;
   const selectors = String(step.target).split(",").map(item => item.trim()).filter(Boolean);
+  let firstRendered = null;
 
   for (const selector of selectors) {
     const elements = Array.from(document.querySelectorAll(selector));
-    const visible = elements.find(element => {
+
+    for (const element of elements) {
       const rect = element.getBoundingClientRect();
       const styles = window.getComputedStyle(element);
-      return rect.width > 0 && rect.height > 0 && styles.visibility !== "hidden" && styles.display !== "none";
-    });
-    if (visible) return visible;
+      const rendered = rect.width > 0 && rect.height > 0 && styles.visibility !== "hidden" && styles.display !== "none";
+      if (!rendered) continue;
+
+      if (!firstRendered) firstRendered = element;
+
+      const intersectsViewport = rect.right > 8 && rect.left < window.innerWidth - 8 && rect.bottom > 8 && rect.top < window.innerHeight - 8;
+      if (intersectsViewport) return element;
+    }
   }
 
-  return null;
+  return firstRendered;
 }
 
 function nextProductTourStep() {

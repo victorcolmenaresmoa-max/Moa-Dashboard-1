@@ -3253,8 +3253,8 @@ const PRODUCT_TOUR_STEPS = [
   {
     title: "Backlog",
     body: "Backlog es una vista más tipo Notion. Desde ahí puedes seleccionar tareas y mover a la papelera las que tú creaste.",
-    target: ".notion-table--backlog .task-title-wrap, .notion-table--backlog, #view-all-tasks .table-wrapper",
-    placement: "top",
+    target: '[data-tab="backlog"]',
+    placement: "bottom",
     before: () => prepareTourTableView("backlog")
   },
   {

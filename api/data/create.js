@@ -7,11 +7,15 @@ module.exports = async function handler(req, res) {
   const session = verifySession(req);
   if (!session) return res.status(401).json({ error: "Unauthorized" });
 
+// api/data/create.js
   const { data } = req.body || {};
   if (!data || typeof data !== "object") {
     return res.status(400).json({ error: "Missing or invalid data field" });
   }
 
+  // 👇 NUEVO: Forzamos que el creador sea el email de la sesión actual
+  data["CreatedBy"] = session.email;
+  
   try {
     const sheetRes = await fetch(process.env.SHEETDB_URL, {
       method: "POST",

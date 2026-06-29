@@ -1309,9 +1309,18 @@ function getEditorValue(td, type) {
 }
 
 function parseDateRange(value) {
-  if (!value) return ["", ""];
-  const parts = String(value).split(/\s+[–-]\s+/);
-  return [parts[0] || "", parts[1] || ""];
+  const clean = String(value || "").replace(/\u00A0/g, " ").trim();
+  if (!clean) return ["", ""];
+
+  // Supports: "Jun 1, 2026 – Jun 30, 2026", "Jun 1, 2026 — Jun 30, 2026",
+  // "Jun 1, 2026 - Jun 30, 2026", "Jun 1, 2026 to Jun 30, 2026", "Jun 1 al Jun 30".
+  const parts = clean
+    .split(/\s*(?:[–—]|\bto\b|\bhasta\b|\bal\b)\s*|\s+-\s+/i)
+    .map(part => part.trim())
+    .filter(Boolean);
+
+  if (parts.length >= 2) return [parts[0], parts.slice(1).join(" – ")];
+  return [clean, ""];
 }
 
 function parseDateToInput(value) {
@@ -1998,7 +2007,8 @@ function getCalendarItems() {
     const title = String(row["TASKS"] || "Untitled").trim();
     if (!title) return;
 
-    if (!isSubitem(row) && getSubitemsForParent(row).length > 0) return;
+    // Show parent tasks too. The calendar must display project start/end dates and all Deadline 1–4 values,
+    // even when a task already has sub-items.
 
     ["Deadline 1", "Deadline 2", "Deadline 3", "Deadline 4"].forEach((key, index) => {
       const date = parseFlexibleDate(row[key]);
@@ -2209,33 +2219,106 @@ function getCalendarMonthDays(baseDate) {
   });
 }
 
-// ─── TRADUCTOR DE FECHAS MEJORADO PARA MOA ───
 function parseFlexibleDate(value) {
-  const clean = String(value || "").trim();
+  let clean = String(value || "").replace(/\u00A0/g, " ").trim();
   if (!clean) return null;
 
-  // 1. Si ya viene en formato YYYY-MM-DD
-  if (/^\d{4}-\d{2}-\d{2}$/.test(clean)) {
-    const parsed = new Date(`${clean}T00:00:00`);
-    return Number.isNaN(parsed.getTime()) ? null : stripTime(parsed);
+  // Remove extra commas/spaces and common time fragments from Google Sheets / SheetDB.
+  clean = clean
+    .replace(/\s+/g, " ")
+    .replace(/\s+at\s+/i, " ")
+    .replace(/,\s*(\d{1,2}:\d{2}(:\d{2})?\s*(AM|PM)?)$/i, "")
+    .replace(/\s+(\d{1,2}:\d{2}(:\d{2})?\s*(AM|PM)?)$/i, "")
+    .trim();
+
+  const monthMap = {
+    jan: 0, january: 0, ene: 0, enero: 0,
+    feb: 1, february: 1, febrero: 1,
+    mar: 2, march: 2, marzo: 2,
+    apr: 3, april: 3, abr: 3, abril: 3,
+    may: 4, mayo: 4,
+    jun: 5, june: 5, junio: 5,
+    jul: 6, july: 6, julio: 6,
+    aug: 7, august: 7, ago: 7, agosto: 7,
+    sep: 8, sept: 8, september: 8, septiembre: 8, set: 8, setiembre: 8,
+    oct: 9, october: 9, octubre: 9,
+    nov: 10, november: 10, noviembre: 10,
+    dec: 11, december: 11, dic: 11, diciembre: 11
+  };
+
+  function normalizeMonthName(name) {
+    return String(name || "")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/\./g, "")
+      .trim();
   }
 
-  // 2. Traductor a prueba de balas para Google Sheets
-  const monthMap = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11 };
-  const match = clean.match(/^([a-zA-Z]{3,})\s+(\d{1,2}),?\s+(\d{4})$/);
-  
-  if (match) {
-    const monthKey = match[1].substring(0, 3).toLowerCase();
-    const month = monthMap[monthKey];
-    const day = parseInt(match[2], 10);
-    const year = parseInt(match[3], 10);
-    
-    if (month !== undefined) {
-      return new Date(year, month, day); 
+  function makeLocalDate(year, monthIndex, day) {
+    const y = Number(year);
+    const m = Number(monthIndex);
+    const d = Number(day);
+    if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) return null;
+    const date = new Date(y, m, d);
+    if (date.getFullYear() !== y || date.getMonth() !== m || date.getDate() !== d) return null;
+    return stripTime(date);
+  }
+
+  function normalizeYear(year) {
+    const y = Number(year);
+    if (!Number.isFinite(y)) return null;
+    if (y < 100) return y >= 70 ? 1900 + y : 2000 + y;
+    return y;
+  }
+
+  // Google Sheets serial date, in case SheetDB returns the raw number.
+  if (/^\d+(\.\d+)?$/.test(clean)) {
+    const serial = Number(clean);
+    if (serial > 20000 && serial < 70000) {
+      const date = new Date(1899, 11, 30);
+      date.setDate(date.getDate() + Math.floor(serial));
+      return stripTime(date);
     }
   }
 
-  // 3. Fallback nativo
+  // ISO formats: 2026-06-29, 2026/06/29, or 2026-06-29T00:00:00.000Z.
+  let match = clean.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})(?:[T\s].*)?$/);
+  if (match) {
+    return makeLocalDate(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+  }
+
+  // Slash/dot numeric formats: 6/29/2026, 29/6/2026, 06.29.2026, 29.06.2026.
+  match = clean.match(/^(\d{1,2})[\/.](\d{1,2})[\/.](\d{2,4})$/);
+  if (match) {
+    const first = Number(match[1]);
+    const second = Number(match[2]);
+    const year = normalizeYear(match[3]);
+
+    // If first number is greater than 12, treat as day/month/year.
+    // Otherwise default to month/day/year because the app saves dates as English/US-style display dates.
+    const monthIndex = first > 12 ? second - 1 : first - 1;
+    const day = first > 12 ? first : second;
+    return makeLocalDate(year, monthIndex, day);
+  }
+
+  // Month first: Jun 29, 2026 / June 29 2026 / Jun. 29, 2026.
+  match = clean.match(/^([a-zA-ZáéíóúñüÁÉÍÓÚÑÜ.]{3,})\s+(\d{1,2}),?\s+(\d{2,4})$/);
+  if (match) {
+    const month = monthMap[normalizeMonthName(match[1])];
+    const year = normalizeYear(match[3]);
+    if (month !== undefined) return makeLocalDate(year, month, Number(match[2]));
+  }
+
+  // Day first: 29 Jun 2026 / 29 junio 2026 / 29 Jun., 2026.
+  match = clean.match(/^(\d{1,2})\s+([a-zA-ZáéíóúñüÁÉÍÓÚÑÜ.]{3,}),?\s+(\d{2,4})$/);
+  if (match) {
+    const month = monthMap[normalizeMonthName(match[2])];
+    const year = normalizeYear(match[3]);
+    if (month !== undefined) return makeLocalDate(year, month, Number(match[1]));
+  }
+
+  // Final fallback for uncommon but valid browser-readable formats.
   const parsed = new Date(clean);
   if (Number.isNaN(parsed.getTime())) return null;
   return stripTime(parsed);

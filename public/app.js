@@ -2636,19 +2636,156 @@ async function initAuth() {
 }
 
 function renderLoginScreen() {
+  // ─── PALETA DE COLORES MOA EXTRAÍDA DE TUS IMÁGENES ───
+  const cTeal = "#167c80";       // Fondo principal
+  const cTealDark = "#12686b";   // Fondo para las formas oscuras o sombras
+  const cYellow = "#f9cd58";     // Arco y ola amarilla
+  const cPink = "#ed2960";       // Squiggle y píldora rosa
+  const cPurple = "#4a154b";     // Estrella morada
+
+  // Logo: Puedes cambiar esta URL si tienes el logo subido en tu repositorio
+  const LOGO_URL = "https://tu-dominio.com/logo-m-moa.png"; 
+
   document.body.innerHTML = `
-    <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f7f6f3;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
-      <div style="background:#fff;border:1px solid #e9e9e7;border-radius:12px;padding:48px 40px;max-width:380px;width:100%;text-align:center;box-shadow:0 4px 24px rgba(0,0,0,0.07);">
-        <div style="font-size:36px;margin-bottom:16px;">🎓</div>
-        <h1 style="font-size:22px;font-weight:700;color:#37352f;margin-bottom:6px;">Specialists Dashboard</h1>
-        <p style="color:#787774;font-size:14px;margin-bottom:32px;">MOA Education · Acceso restringido al equipo</p>
-        <a href="/api/auth/login" style="display:inline-flex;align-items:center;gap:10px;padding:12px 24px;border-radius:8px;text-decoration:none;background:#4285f4;color:#fff;font-size:14px;font-weight:600;box-shadow:0 2px 8px rgba(66,133,244,0.3);transition:background 0.15s;">
-          <svg width="18" height="18" viewBox="0 0 48 48">
+    <div style="
+      position: relative;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: ${cTeal};
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      padding: 20px;
+      overflow: hidden; /* Evita scroll por las formas decorativas */
+    ">
+      
+      <!-- ─── FORMAS DECORATIVAS DE FONDO (MOA BRANDING) ─── -->
+      
+      <!-- Texto gigante oscuro de fondo ('moa') -->
+      <div style="
+        position: absolute; 
+        bottom: -5%; 
+        right: 15%; 
+        font-size: 45vh; 
+        font-weight: 900; 
+        color: ${cTealDark}; 
+        z-index: 1; 
+        pointer-events: none; 
+        user-select: none; 
+        line-height: 1;
+        letter-spacing: -20px;
+      ">moa</div>
+
+      <!-- Ola Amarilla (Arriba derecha) -->
+      <svg style="position: absolute; top: -10%; right: 8%; width: 140px; height: 500px; z-index: 2;" viewBox="0 0 100 400" preserveAspectRatio="none">
+        <path d="M50,0 C90,50 10,100 50,150 C90,200 10,250 50,300 C90,350 10,400 50,450" fill="none" stroke="${cYellow}" stroke-width="50" stroke-linecap="round"/>
+      </svg>
+
+      <!-- Squiggle Rosa (Ola horizontal izquierda) -->
+      <svg style="position: absolute; top: 20%; left: -5%; width: 220px; height: 80px; z-index: 2;" viewBox="0 0 200 80">
+         <path d="M-20,40 C10,10 40,70 70,40 C100,10 130,70 160,40 C190,10 220,70 250,40" fill="none" stroke="${cPink}" stroke-width="25" stroke-linecap="round"/>
+      </svg>
+
+      <!-- Arco Amarillo (Medio izquierda) -->
+      <div style="
+        position: absolute; 
+        bottom: 30%; 
+        left: -2%; 
+        width: 140px; 
+        height: 70px; 
+        border: 35px solid ${cYellow}; 
+        border-bottom: 0; 
+        border-radius: 150px 150px 0 0; 
+        z-index: 2; 
+        transform: rotate(10deg);
+      "></div>
+
+      <!-- Píldora Rosa (Abajo izquierda) -->
+      <div style="
+        position: absolute; 
+        bottom: 5%; 
+        left: 5%; 
+        width: 180px; 
+        height: 70px; 
+        border: 20px solid ${cPink}; 
+        border-radius: 70px; 
+        z-index: 2;
+      "></div>
+
+      <!-- Estrella Morada (Derecha centro) -->
+      <svg style="position: absolute; top: 55%; right: 2%; width: 140px; height: 140px; z-index: 2;" viewBox="0 0 100 100">
+        <path fill="${cPurple}" d="M50 5 L60 25 L82 18 L78 40 L98 50 L78 60 L82 82 L60 75 L50 95 L40 75 L18 82 L22 60 L2 50 L22 40 L18 18 L40 25 Z" stroke-linejoin="round"/>
+      </svg>
+
+
+      <!-- ─── TARJETA DE LOGIN CENTRAL ─── -->
+      <div style="
+        position: relative;
+        z-index: 10;
+        background: #ffffff;
+        border-radius: 24px;
+        padding: 56px 48px;
+        max-width: 420px;
+        width: 100%;
+        text-align: center;
+        box-shadow: 0 25px 50px -12px rgba(0,0,0,0.4);
+      ">
+        
+        <!-- Contenedor del Logo (Estilo del ícono 'm') -->
+        <div style="margin-bottom: 24px; display: flex; justify-content: center;">
+          <div style="
+            background-color: ${cTeal}; 
+            width: 72px; 
+            height: 72px; 
+            border-radius: 16px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            box-shadow: 0 8px 16px rgba(22, 124, 128, 0.3);
+            overflow: hidden;
+          ">
+             <!-- Si no encuentra la imagen LOGO_URL, muestra la "m" blanca generada por CSS -->
+             <img src="${LOGO_URL}" alt="MOA" style="width: 100%; height: 100%; object-fit: cover;" 
+                  onerror="this.outerHTML='<span style=\\'font-size:42px; color:white; font-weight:900; font-family:sans-serif; letter-spacing:-2px;\\'>m</span>'">
+          </div>
+        </div>
+
+        <h1 style="font-size: 26px; font-weight: 800; color: #111827; margin-bottom: 8px; letter-spacing: -0.5px;">
+          Specialists Dashboard
+        </h1>
+        <p style="color: #6b7280; font-size: 15px; margin-bottom: 32px; line-height: 1.5;">
+          Herramienta interna de <strong style="color: ${cTeal};">MOA Education</strong><br>Acceso seguro para el equipo
+        </p>
+
+        <!-- Botón de Google con Hover Effects -->
+        <a href="/api/auth/login" style="
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 12px;
+          width: 100%;
+          box-sizing: border-box;
+          padding: 14px 24px;
+          border-radius: 12px;
+          text-decoration: none;
+          background: #4285f4;
+          color: #fff;
+          font-size: 16px;
+          font-weight: 600;
+          box-shadow: 0 4px 12px rgba(66,133,244,0.3);
+          transition: transform 0.15s ease, box-shadow 0.15s ease;
+        "
+        onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 16px rgba(66,133,244,0.4)';"
+        onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(66,133,244,0.3)';"
+        >
+          <svg width="22" height="22" viewBox="0 0 48 48">
             <path fill="#FFF" d="M43.6 20H24v8.4h11.1C33.8 33.7 29.4 37 24 37c-7.2 0-13-5.8-13-13s5.8-13 13-13c3.1 0 5.9 1.1 8.1 2.9l6.1-6.1C34.6 5.1 29.6 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21c10.9 0 20-7.9 20-21 0-1.3-.1-2.7-.4-4z"/>
           </svg>
           Iniciar sesión con Google
         </a>
+        
         ${getAuthErrorMessage()}
+        
       </div>
     </div>
   `;

@@ -2734,20 +2734,396 @@ async function initAuth() {
 }
 
 function renderLoginScreen() {
+  const LOGO_URL = "https://cdn.phototourl.com/free/2026-06-29-008525dd-a032-42a0-a2a8-dbf83e0c36a4.jpg";
+
   document.body.innerHTML = `
-    <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f7f6f3;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
-      <div style="background:#fff;border:1px solid #e9e9e7;border-radius:12px;padding:48px 40px;max-width:380px;width:100%;text-align:center;box-shadow:0 4px 24px rgba(0,0,0,0.07);">
-        <div style="font-size:36px;margin-bottom:16px;">🎓</div>
-        <h1 style="font-size:22px;font-weight:700;color:#37352f;margin-bottom:6px;">Specialists Dashboard</h1>
-        <p style="color:#787774;font-size:14px;margin-bottom:32px;">MOA Education · Acceso restringido al equipo</p>
-        <a href="/api/auth/login" style="display:inline-flex;align-items:center;gap:10px;padding:12px 24px;border-radius:8px;text-decoration:none;background:#4285f4;color:#fff;font-size:14px;font-weight:600;box-shadow:0 2px 8px rgba(66,133,244,0.3);transition:background 0.15s;">
-          <svg width="18" height="18" viewBox="0 0 48 48">
-            <path fill="#FFF" d="M43.6 20H24v8.4h11.1C33.8 33.7 29.4 37 24 37c-7.2 0-13-5.8-13-13s5.8-13 13-13c3.1 0 5.9 1.1 8.1 2.9l6.1-6.1C34.6 5.1 29.6 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21c10.9 0 20-7.9 20-21 0-1.3-.1-2.7-.4-4z"/>
-          </svg>
+    <style>
+      :root {
+        --moa-teal: #117f86;
+        --moa-teal-deep: #0b6f76;
+        --moa-teal-dark: #07585f;
+        --moa-yellow: #ffd56a;
+        --moa-pink: #f02a61;
+        --moa-purple: #4b174f;
+        --moa-cream: #fff8ea;
+        --moa-ink: #213033;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: var(--moa-teal);
+      }
+
+      .moa-login-screen {
+        position: relative;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        padding: 28px;
+        color: var(--moa-ink);
+        isolation: isolate;
+        background:
+          radial-gradient(circle at 14% 14%, rgba(255, 255, 255, 0.16) 0 12%, transparent 13%),
+          radial-gradient(circle at 86% 84%, rgba(255, 255, 255, 0.10) 0 14%, transparent 15%),
+          linear-gradient(135deg, #148890 0%, #0d767d 44%, #075f66 100%);
+      }
+
+      .moa-login-screen::before {
+        content: "moa";
+        position: absolute;
+        right: -5vw;
+        bottom: -12vh;
+        z-index: -2;
+        color: rgba(5, 80, 86, 0.38);
+        font-size: clamp(180px, 36vw, 560px);
+        font-weight: 950;
+        line-height: 0.78;
+        letter-spacing: -0.14em;
+        pointer-events: none;
+        user-select: none;
+      }
+
+      .moa-login-screen::after {
+        content: "“”";
+        position: absolute;
+        left: 5vw;
+        bottom: 8vh;
+        z-index: -2;
+        color: rgba(5, 80, 86, 0.32);
+        font-size: clamp(110px, 18vw, 260px);
+        font-weight: 950;
+        letter-spacing: -0.16em;
+        transform: rotate(-2deg);
+        pointer-events: none;
+        user-select: none;
+      }
+
+      .moa-shape {
+        position: absolute;
+        z-index: -1;
+        pointer-events: none;
+        user-select: none;
+      }
+
+      .moa-shape--star {
+        width: 220px;
+        height: 220px;
+        top: -54px;
+        left: -42px;
+        opacity: 0.28;
+        transform: rotate(7deg);
+      }
+
+      .moa-shape--wave-yellow {
+        width: 150px;
+        height: 520px;
+        top: -72px;
+        right: 10vw;
+        filter: drop-shadow(0 16px 28px rgba(0, 0, 0, 0.10));
+      }
+
+      .moa-shape--wave-pink {
+        width: 310px;
+        height: 120px;
+        left: -80px;
+        top: 28%;
+        filter: drop-shadow(0 14px 24px rgba(0, 0, 0, 0.12));
+      }
+
+      .moa-shape--arc {
+        width: 250px;
+        height: 126px;
+        left: -58px;
+        bottom: 13%;
+        border: 30px solid var(--moa-yellow);
+        border-bottom: 0;
+        border-radius: 190px 190px 0 0;
+        transform: rotate(-7deg);
+        box-shadow: 0 20px 36px rgba(0, 0, 0, 0.12);
+      }
+
+      .moa-shape--capsule {
+        width: 230px;
+        height: 78px;
+        right: -46px;
+        bottom: 10%;
+        border: 24px solid var(--moa-pink);
+        border-radius: 999px;
+        opacity: 0.96;
+        box-shadow: 0 22px 36px rgba(0, 0, 0, 0.13);
+      }
+
+      .moa-shape--burst {
+        width: 165px;
+        height: 165px;
+        right: 4vw;
+        top: 52%;
+        transform: rotate(14deg);
+        filter: drop-shadow(0 18px 30px rgba(0, 0, 0, 0.14));
+      }
+
+      .moa-login-card {
+        position: relative;
+        width: min(100%, 460px);
+        padding: 44px 40px 38px;
+        border: 1px solid rgba(255, 255, 255, 0.74);
+        border-radius: 30px;
+        background: rgba(255, 255, 255, 0.96);
+        box-shadow:
+          0 34px 80px rgba(5, 56, 61, 0.34),
+          0 1px 0 rgba(255, 255, 255, 0.9) inset;
+        text-align: center;
+        overflow: hidden;
+        backdrop-filter: blur(18px);
+      }
+
+      .moa-login-card::before {
+        content: "";
+        position: absolute;
+        inset: 0 0 auto;
+        height: 10px;
+        background: linear-gradient(90deg, var(--moa-pink), var(--moa-yellow), var(--moa-teal));
+      }
+
+      .moa-login-card::after {
+        content: "";
+        position: absolute;
+        width: 180px;
+        height: 180px;
+        right: -92px;
+        bottom: -100px;
+        border-radius: 50%;
+        background: rgba(17, 127, 134, 0.10);
+      }
+
+      .moa-brand-pill {
+        position: relative;
+        z-index: 1;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 20px;
+        padding: 7px 12px;
+        border: 1px solid rgba(17, 127, 134, 0.14);
+        border-radius: 999px;
+        background: rgba(17, 127, 134, 0.08);
+        color: var(--moa-teal-dark);
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .moa-brand-pill span {
+        width: 7px;
+        height: 7px;
+        border-radius: 999px;
+        background: var(--moa-pink);
+        box-shadow: 12px 0 0 var(--moa-yellow), 24px 0 0 var(--moa-purple);
+        margin-right: 22px;
+      }
+
+      .moa-logo-shell {
+        position: relative;
+        z-index: 1;
+        width: 92px;
+        height: 92px;
+        margin: 0 auto 22px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 28px;
+        background: linear-gradient(145deg, #158e96, #0b6970);
+        box-shadow: 0 18px 34px rgba(17, 127, 134, 0.32);
+        overflow: hidden;
+      }
+
+      .moa-logo-shell::before {
+        content: "";
+        position: absolute;
+        inset: -45%;
+        background: linear-gradient(120deg, transparent 35%, rgba(255,255,255,0.26) 50%, transparent 65%);
+        transform: rotate(18deg);
+      }
+
+      .moa-logo-shell img {
+        position: relative;
+        z-index: 1;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .moa-logo-fallback {
+        position: relative;
+        z-index: 1;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+        color: white;
+        font-size: 54px;
+        font-weight: 950;
+        letter-spacing: -0.08em;
+      }
+
+      .moa-login-card h1 {
+        position: relative;
+        z-index: 1;
+        margin: 0;
+        color: var(--moa-ink);
+        font-size: clamp(27px, 3.4vw, 34px);
+        font-weight: 900;
+        letter-spacing: -0.045em;
+        line-height: 1.05;
+      }
+
+      .moa-login-card p {
+        position: relative;
+        z-index: 1;
+        margin: 14px auto 28px;
+        max-width: 320px;
+        color: #607174;
+        font-size: 15px;
+        line-height: 1.55;
+      }
+
+      .moa-login-card p strong {
+        color: var(--moa-teal-dark);
+      }
+
+      .moa-google-button {
+        position: relative;
+        z-index: 1;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        width: 100%;
+        min-height: 52px;
+        padding: 14px 18px;
+        border-radius: 16px;
+        border: 0;
+        text-decoration: none;
+        background: linear-gradient(135deg, #ffffff 0%, #f5fbfb 100%);
+        color: var(--moa-teal-dark);
+        font-size: 15px;
+        font-weight: 850;
+        box-shadow: 0 12px 24px rgba(5, 88, 95, 0.16), 0 0 0 1px rgba(17, 127, 134, 0.16) inset;
+        transition: transform 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+      }
+
+      .moa-google-button:hover {
+        transform: translateY(-2px);
+        background: #ffffff;
+        box-shadow: 0 18px 32px rgba(5, 88, 95, 0.22), 0 0 0 1px rgba(17, 127, 134, 0.22) inset;
+      }
+
+      .moa-google-icon {
+        display: grid;
+        place-items: center;
+        width: 30px;
+        height: 30px;
+        border-radius: 10px;
+        background: #4285f4;
+        color: white;
+        font-weight: 900;
+        font-size: 18px;
+        line-height: 1;
+      }
+
+      .moa-login-note {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        margin-top: 20px;
+        color: #7c8a8d;
+        font-size: 12px;
+        font-weight: 650;
+      }
+
+      .moa-login-note::before {
+        content: "";
+        width: 8px;
+        height: 8px;
+        border-radius: 99px;
+        background: var(--moa-yellow);
+        box-shadow: 0 0 0 4px rgba(255, 213, 106, 0.18);
+      }
+
+      .moa-auth-error {
+        position: relative;
+        z-index: 1;
+        margin: 20px 0 0;
+        padding: 12px 14px;
+        border: 1px solid rgba(240, 42, 97, 0.22);
+        border-radius: 14px;
+        background: rgba(240, 42, 97, 0.08);
+        color: #991b1b;
+        font-size: 13px;
+        line-height: 1.45;
+      }
+
+      @media (max-width: 760px) {
+        .moa-login-screen { padding: 18px; }
+        .moa-login-card { padding: 38px 24px 30px; border-radius: 24px; }
+        .moa-shape--wave-yellow { right: -26px; opacity: 0.72; }
+        .moa-shape--wave-pink { left: -150px; opacity: 0.85; }
+        .moa-shape--arc { left: -140px; }
+        .moa-shape--capsule { right: -150px; }
+        .moa-shape--burst { right: -68px; opacity: 0.75; }
+      }
+    </style>
+
+    <div class="moa-login-screen">
+      <svg class="moa-shape moa-shape--star" viewBox="0 0 100 100" aria-hidden="true">
+        <path fill="rgba(5, 88, 95, 0.95)" d="M50 2 L58 30 L86 14 L70 42 L99 50 L70 58 L86 86 L58 70 L50 98 L42 70 L14 86 L30 58 L1 50 L30 42 L14 14 L42 30 Z" />
+      </svg>
+
+      <svg class="moa-shape moa-shape--wave-yellow" viewBox="0 0 120 520" preserveAspectRatio="none" aria-hidden="true">
+        <path d="M62 -20 C128 50 -8 96 62 170 C128 240 -8 286 62 360 C128 430 -8 476 62 540" fill="none" stroke="#ffd56a" stroke-width="44" stroke-linecap="round" />
+      </svg>
+
+      <svg class="moa-shape moa-shape--wave-pink" viewBox="0 0 310 120" aria-hidden="true">
+        <path d="M-24 63 C14 18 52 108 90 63 C128 18 166 108 204 63 C242 18 280 108 334 55" fill="none" stroke="#f02a61" stroke-width="26" stroke-linecap="round" />
+      </svg>
+
+      <div class="moa-shape moa-shape--arc" aria-hidden="true"></div>
+      <div class="moa-shape moa-shape--capsule" aria-hidden="true"></div>
+
+      <svg class="moa-shape moa-shape--burst" viewBox="0 0 100 100" aria-hidden="true">
+        <path fill="#4b174f" d="M50 4 L61 27 L86 18 L77 43 L98 50 L77 57 L86 82 L61 73 L50 96 L39 73 L14 82 L23 57 L2 50 L23 43 L14 18 L39 27 Z" />
+      </svg>
+
+      <main class="moa-login-card" role="main" aria-label="Specialists Dashboard login">
+        <div class="moa-brand-pill"><span aria-hidden="true"></span>MOA Education</div>
+
+        <div class="moa-logo-shell" aria-hidden="true">
+          <img src="${LOGO_URL}" alt="" referrerpolicy="no-referrer" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+          <div class="moa-logo-fallback">m</div>
+        </div>
+
+        <h1>Specialists Dashboard</h1>
+        <p><strong>MOA Education task flow</strong><br>Acceso seguro para gestionar tareas, deadlines y flujos del equipo académico.</p>
+
+        <a href="/api/auth/login" class="moa-google-button">
+          <span class="moa-google-icon" aria-hidden="true">G</span>
           Iniciar sesión con Google
         </a>
+
+        <div class="moa-login-note">Acceso restringido al equipo autorizado</div>
         ${getAuthErrorMessage()}
-      </div>
+      </main>
     </div>
   `;
 }

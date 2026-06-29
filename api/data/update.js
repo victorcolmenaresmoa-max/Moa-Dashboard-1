@@ -1,26 +1,32 @@
-// api/data/update.js  —  PATCH a cell (RBAC enforced server-side)
+// api/data/update.js
 const { verifySession } = require("../../lib/session");
 
 const DEADLINE_KEYS = ["Deadline 1", "Deadline 2", "Deadline 3", "Deadline 4"];
 
-function checkPermission({ session, key, value, taskSpecialists }) {
+// Agregamos taskCreator a los parámetros
+function checkPermission({ session, key, value, taskSpecialists, taskCreator }) {
   const { role, specialistKey, email } = session;
 
   if (role === "admin") return { allowed: true };
 
   if (role === "specialist") {
-    // Block "Revisado y aprobado" for specialists
+    // Verificamos si el usuario actual fue quien creó la tarea
+    const isCreator = taskCreator === email;
+
+    // Bloqueos universales para especialistas (incluso si la crearon)
     if (key === "Calidad" && value === "Revisado y aprobado") {
       return { allowed: false, reason: "Solo los administradores pueden marcar 'Revisado y aprobado'." };
     }
-    // Block Deadline columns
     if (DEADLINE_KEYS.includes(key)) {
       return { allowed: false, reason: "Solo los administradores pueden modificar los Deadlines principales." };
     }
-    // Allow editing own specialist note column
+
+    // 👇 NUEVO: Si es el creador, tiene permiso para editar el resto de la tarea
+    if (isCreator) return { allowed: true };
+
+    // Lógica normal para tareas que NO creó:
     if (specialistKey && key === specialistKey) return { allowed: true };
 
-    // Allow changing Estado only on assigned tasks
     if (key === "Estado") {
       const assigned = (taskSpecialists || "").split(",").map(s => s.trim().toLowerCase());
       const myName   = (specialistKey || "").toLowerCase();
@@ -29,7 +35,7 @@ function checkPermission({ session, key, value, taskSpecialists }) {
       return { allowed: false, reason: "Solo puedes cambiar el Estado en tareas donde estás asignado/a." };
     }
 
-    return { allowed: false, reason: "No tienes permiso para editar este campo." };
+    return { allowed: false, reason: "No puedes editar esta tarea porque no la creaste ni estás asignado." };
   }
 
   return { allowed: false, reason: "Rol desconocido." };
@@ -41,16 +47,18 @@ module.exports = async function handler(req, res) {
   const session = verifySession(req);
   if (!session) return res.status(401).json({ error: "Unauthorized" });
 
-  const { matchColumn, matchValue, key, value, taskSpecialists } = req.body || {};
+  // 👇 Extraemos taskCreator del request
+  const { matchColumn, matchValue, key, value, taskSpecialists, taskCreator } = req.body || {};
   if (!matchColumn || !matchValue || !key || value === undefined) {
     return res.status(400).json({ error: "Missing required fields" });
   }
 
-  const permission = checkPermission({ session, key, value, taskSpecialists: taskSpecialists || "" });
+  // Pasamos taskCreator a la función de permisos
+  const permission = checkPermission({ session, key, value, taskSpecialists: taskSpecialists || "", taskCreator });
   if (!permission.allowed) {
     return res.status(403).json({ error: permission.reason });
   }
-
+// ... el resto sigue igual ...
   try {
     const url = `${process.env.SHEETDB_URL}/${encodeURIComponent(matchColumn)}/${encodeURIComponent(matchValue)}`;
     const sheetRes = await fetch(url, {

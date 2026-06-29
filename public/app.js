@@ -1314,21 +1314,6 @@ function parseDateRange(value) {
   return [parts[0] || "", parts[1] || ""];
 }
 
-function parseDateToInput(value) {
-  const date = parseFlexibleDate(value);
-  if (!date) return "";
-  const yyyy = date.getFullYear();
-  const mm = String(date.getMonth() + 1).padStart(2, "0");
-  const dd = String(date.getDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
-}
-
-function formatDateForDisplay(inputDate) {
-  const date = parseFlexibleDate(inputDate);
-  if (!date) return inputDate;
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-}
-
 // ─── Sort + Filter + Search ───────────────────────────────────────────────
 function handleSort(key) {
   if (activeEditor) activeEditor = null;
@@ -2209,16 +2194,6 @@ function getCalendarMonthDays(baseDate) {
   });
 }
 
-function parseFlexibleDate(value) {
-  const clean = String(value || "").trim();
-  if (!clean) return null;
-
-  // 1. Si ya viene en formato informático YYYY-MM-DD
-  if (/^\d{4}-\d{2}-\d{2}$/.test(clean)) {
-    const parsed = new Date(`${clean}T00:00:00`);
-    return Number.isNaN(parsed.getTime()) ? null : stripTime(parsed);
-  }
-
   // 2. Traductor a prueba de balas para Google Sheets (ej. "Jun 19, 2026" o "June 19 2026")
   // Forzamos la creación manual para evitar saltos de día por la zona horaria de Venezuela (-04:00)
   const monthMap = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11 };
@@ -2239,6 +2214,53 @@ function parseFlexibleDate(value) {
   const parsed = new Date(clean);
   if (Number.isNaN(parsed.getTime())) return null;
   return stripTime(parsed);
+}
+// ─── TRADUCTOR DE FECHAS MEJORADO PARA MOA ───
+
+function parseFlexibleDate(value) {
+  const clean = String(value || "").trim();
+  if (!clean) return null;
+
+  // 1. Si ya viene en formato YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(clean)) {
+    const parsed = new Date(`${clean}T00:00:00`);
+    return Number.isNaN(parsed.getTime()) ? null : stripTime(parsed);
+  }
+
+  // 2. Traductor a prueba de balas para Google Sheets
+  const monthMap = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11 };
+  const match = clean.match(/^([a-zA-Z]{3,})\s+(\d{1,2}),?\s+(\d{4})$/);
+  
+  if (match) {
+    const monthKey = match[1].substring(0, 3).toLowerCase();
+    const month = monthMap[monthKey];
+    const day = parseInt(match[2], 10);
+    const year = parseInt(match[3], 10);
+    
+    if (month !== undefined) {
+      return new Date(year, month, day); 
+    }
+  }
+
+  // 3. Fallback nativo
+  const parsed = new Date(clean);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return stripTime(parsed);
+}
+
+function parseDateToInput(value) {
+  const date = parseFlexibleDate(value);
+  if (!date) return "";
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function formatDateForDisplay(inputDate) {
+  const date = parseFlexibleDate(inputDate);
+  if (!date) return inputDate;
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
 function stripTime(date) { return new Date(date.getFullYear(), date.getMonth(), date.getDate()); }

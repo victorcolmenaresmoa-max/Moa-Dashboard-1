@@ -2080,51 +2080,55 @@ function renderKPIs() {
   const container = document.getElementById("kpis-grid");
   if (!container) return;
 
+  const totalKpis = ROLE_KPI_CONFIG.reduce((total, roleConfig) => total + roleConfig.items.length, 0);
+
   container.innerHTML = `
-    <div class="kpi-role-board">
-      <div class="kpi-role-board__intro">
+    <section class="kpi-clean-board" aria-label="KPIs por especialista">
+      <div class="kpi-clean-board__summary">
         <div>
-          <p class="calendar-eyebrow">MOA Performance</p>
-          <h3>KPIs por rol</h3>
-          <p>Cada especialista puede ubicar su rol y revisar claramente qué KPI se mide y cuál es la meta recomendada.</p>
+          <span class="kpi-clean-board__eyebrow">KPI + Meta</span>
+          <strong>Vista limpia por rol</strong>
+          <p>Sin instrumentos, sin tablas pesadas y con la información esencial más fácil de leer.</p>
         </div>
-        <span class="kpi-role-board__pill">${ROLE_KPI_CONFIG.length} roles</span>
+        <div class="kpi-clean-board__stats" aria-label="Resumen de KPIs">
+          <span><b>${ROLE_KPI_CONFIG.length}</b> roles</span>
+          <span><b>${totalKpis}</b> KPIs</span>
+        </div>
       </div>
-      <div class="kpi-role-grid">
+      <div class="kpi-clean-grid">
         ${ROLE_KPI_CONFIG.map((roleConfig, index) => renderRoleKpiCard(roleConfig, index)).join("")}
       </div>
-    </div>
+    </section>
   `;
 }
 
 function renderRoleKpiCard(roleConfig, index) {
   const colorClass = `avatar-${index % 7}`;
+  const initials = getInitials(roleConfig.role);
+
   return `
-    <article class="kpi-role-card">
-      <div class="kpi-role-card__header">
-        <span class="avatar-initials ${colorClass}">${esc(getInitials(roleConfig.role))}</span>
-        <div>
+    <article class="kpi-clean-card">
+      <header class="kpi-clean-card__header">
+        <span class="kpi-clean-card__avatar avatar-initials ${colorClass}">${esc(initials)}</span>
+        <div class="kpi-clean-card__title">
           <h4>${esc(roleConfig.role)}</h4>
           <p>${esc(roleConfig.note)}</p>
         </div>
-      </div>
-      <div class="kpi-role-table-wrap">
-        <table class="kpi-role-table">
-          <thead>
-            <tr>
-              <th>KPI</th>
-              <th>Meta</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${roleConfig.items.map(item => `
-              <tr>
-                <td>${esc(item.kpi)}</td>
-                <td><strong>${esc(item.meta)}</strong></td>
-              </tr>
-            `).join("")}
-          </tbody>
-        </table>
+        <span class="kpi-clean-card__badge">${roleConfig.items.length} KPIs</span>
+      </header>
+      <div class="kpi-clean-list">
+        ${roleConfig.items.map((item, itemIndex) => `
+          <div class="kpi-clean-row">
+            <div class="kpi-clean-row__kpi">
+              <span class="kpi-clean-row__number">${String(itemIndex + 1).padStart(2, "0")}</span>
+              <span>${esc(item.kpi)}</span>
+            </div>
+            <div class="kpi-clean-row__target">
+              <small>Meta</small>
+              <strong>${esc(item.meta)}</strong>
+            </div>
+          </div>
+        `).join("")}
       </div>
     </article>
   `;

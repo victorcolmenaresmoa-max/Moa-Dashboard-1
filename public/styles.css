@@ -3389,3 +3389,131 @@ max-width: 250px !important;
     min-width: 520px;
   }
 }
+
+/* =========================================================
+   KPIs compact clean layout — final visual adjustment
+   Removes the live-calculation subtitle and makes KPI cards
+   lighter, smaller, and easier to scan.
+========================================================= */
+#view-kpis .kpis-topbar .calendar-subtitle {
+  display: none !important;
+}
+
+#view-kpis .kpis-shell {
+  padding: 16px 2px 32px !important;
+}
+
+#view-kpis .kpis-topbar {
+  margin-bottom: 12px !important;
+}
+
+#view-kpis .kpis-topbar h2 {
+  margin-bottom: 0 !important;
+  font-size: 20px !important;
+  line-height: 1.15 !important;
+}
+
+#view-kpis .kpi-role-board {
+  max-width: 1280px !important;
+  gap: 14px !important;
+}
+
+#view-kpis .kpi-role-board__intro {
+  padding: 16px 20px !important;
+  border-radius: 18px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 16px !important;
+}
+
+#view-kpis .kpi-role-board__intro h3 {
+  font-size: 22px !important;
+  line-height: 1.15 !important;
+  margin: 0 0 4px !important;
+}
+
+#view-kpis .kpi-role-board__intro p {
+  max-width: 760px !important;
+  font-size: 12.5px !important;
+  line-height: 1.45 !important;
+  margin: 0 !important;
+}
+
+#view-kpis .kpi-role-board__pill {
+  min-width: 70px !important;
+  height: 32px !important;
+  padding: 0 12px !important;
+  font-size: 11px !important;
+}
+
+#view-kpis .kpi-role-grid {
+  grid-template-columns: repeat(2, minmax(360px, 1fr)) !important;
+  gap: 14px !important;
+}
+
+#view-kpis .kpi-role-card {
+  border-radius: 18px !important;
+  box-shadow: 0 14px 38px rgba(7, 90, 98, 0.08) !important;
+}
+
+#view-kpis .kpi-role-card__header {
+  padding: 14px 16px !important;
+  gap: 12px !important;
+}
+
+#view-kpis .kpi-role-card__header .avatar-initials {
+  width: 36px !important;
+  height: 36px !important;
+  font-size: 11px !important;
+}
+
+#view-kpis .kpi-role-card__header h4 {
+  font-size: 17px !important;
+  line-height: 1.2 !important;
+  margin: 0 0 2px !important;
+}
+
+#view-kpis .kpi-role-card__header p {
+  font-size: 12px !important;
+  line-height: 1.35 !important;
+  margin: 0 !important;
+}
+
+#view-kpis .kpi-role-table th {
+  padding: 9px 12px !important;
+  font-size: 11px !important;
+}
+
+#view-kpis .kpi-role-table td {
+  padding: 9px 12px !important;
+  font-size: 12px !important;
+  line-height: 1.35 !important;
+  vertical-align: top !important;
+}
+
+#view-kpis .kpi-role-table td:nth-child(1) { width: 56% !important; }
+#view-kpis .kpi-role-table td:nth-child(2) { width: 44% !important; }
+
+@media (min-width: 1500px) {
+  #view-kpis .kpi-role-grid {
+    grid-template-columns: repeat(3, minmax(340px, 1fr)) !important;
+  }
+}
+
+@media (max-width: 980px) {
+  #view-kpis .kpi-role-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 768px) {
+  #view-kpis .kpi-role-board__intro {
+    align-items: flex-start !important;
+    flex-direction: column !important;
+  }
+
+  #view-kpis .kpi-role-table {
+    min-width: 440px !important;
+  }
+}

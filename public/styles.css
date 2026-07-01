@@ -3274,3 +3274,124 @@ max-width: 250px !important;
     min-width: 680px;
   }
 }
+
+/* =========================================================
+   FIX — KPIs por rol full-width, clean and readable layout
+   This fixes the KPI tab when #kpis-grid inherited the old
+   auto-fill KPI card grid and compressed the role cards.
+========================================================= */
+#kpis-grid.kpi-grid,
+#kpis-grid {
+  display: block !important;
+  width: 100% !important;
+  max-width: none !important;
+}
+
+#kpis-grid > .kpi-role-board {
+  grid-column: 1 / -1 !important;
+  width: 100% !important;
+}
+
+.kpi-role-board {
+  width: 100% !important;
+  max-width: 1380px;
+  margin: 0 auto;
+  display: grid;
+  gap: 18px;
+}
+
+.kpi-role-board__intro {
+  width: 100%;
+  padding: 22px 24px;
+  border-radius: 24px;
+}
+
+.kpi-role-board__intro h3 {
+  font-size: 26px;
+}
+
+.kpi-role-board__intro p {
+  max-width: 860px;
+  font-size: 13.5px;
+}
+
+.kpi-role-grid {
+  width: 100%;
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(420px, 1fr));
+  gap: 18px;
+  align-items: start;
+}
+
+.kpi-role-card {
+  width: 100%;
+  min-width: 0;
+  border-radius: 24px;
+  overflow: hidden;
+}
+
+.kpi-role-card__header {
+  padding: 18px 20px;
+}
+
+.kpi-role-card__header h4 {
+  font-size: 18px;
+  line-height: 1.25;
+}
+
+.kpi-role-card__header p {
+  max-width: 100%;
+  font-size: 12.8px;
+}
+
+.kpi-role-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.kpi-role-table {
+  width: 100%;
+  min-width: 0;
+  table-layout: fixed;
+}
+
+.kpi-role-table th,
+.kpi-role-table td {
+  padding: 11px 13px;
+  word-break: normal;
+  overflow-wrap: anywhere;
+}
+
+.kpi-role-table td:nth-child(1) { width: 40%; }
+.kpi-role-table td:nth-child(2) { width: 25%; }
+.kpi-role-table td:nth-child(3) { width: 35%; }
+
+.kpi-role-table td strong {
+  color: var(--moa-ink);
+}
+
+@media (max-width: 1180px) {
+  .kpi-role-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .kpis-shell {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .kpi-role-board__intro {
+    padding: 18px;
+  }
+
+  .kpi-role-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .kpi-role-table {
+    min-width: 680px;
+  }
+}

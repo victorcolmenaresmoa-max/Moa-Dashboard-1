@@ -45,8 +45,24 @@ const OPTIONS = {
     "Noryley Suescun",
     "Ninfa Vivas",
     "Asdrubal Marquez"
+  ],
+  fase: [
+    "En Producción",
+    "En Revisión de Calidad",
+    "Correcciones Pendientes",
+    "Revisión Final / Jefes",
+    "Aprobado / Finalizado"
   ]
 };
+
+// Orden secuencial del pipeline de revisión de calidad (columna "Fase" en la hoja).
+const FASE_STAGES = [
+  { value: "En Producción",           short: "Producción" },
+  { value: "En Revisión de Calidad",  short: "Rev. Calidad" },
+  { value: "Correcciones Pendientes", short: "Correcciones" },
+  { value: "Revisión Final / Jefes",  short: "Rev. Final" },
+  { value: "Aprobado / Finalizado",   short: "Aprobado" }
+];
 
 // These are the visible columns in the table.
 const SPECIALIST_NOTE_COLUMNS = [
@@ -144,6 +160,7 @@ const ALL_SHEET_KEYS = [
   "Noryley Suescun",
   "Ninfa Vivas",
   "Asdrubal Marquez",
+  "Fase",
   PARENT_ID_KEY,
   "CreatedBy"
 ];
@@ -399,6 +416,12 @@ function clientCanEdit(row, key, newValue) {
 
   if (isAdmin()) return { allowed: true };
 
+  // Bloqueo universal: solo administradores pueden marcar la fase final del Timeline,
+  // incluso en tareas propias.
+  if (key === "Fase" && newValue === "Aprobado / Finalizado") {
+    return { allowed: false, reason: "Solo los administradores pueden marcar la fase 'Aprobado / Finalizado'." };
+  }
+
   // A specialist can fully edit the tasks they created, including Calidad and Deadline 1–4.
   // Tasks created by other people remain protected below.
   if (isCreator) return { allowed: true };
@@ -406,10 +429,11 @@ function clientCanEdit(row, key, newValue) {
   const myKey = getMySpecialistKey();
   if (myKey && key === myKey) return { allowed: true }; // own note column
 
-  if (key === "Estado") {
+  if (key === "Estado" || key === "Fase") {
     const assigned = (row["Specialists"] || "").split(",").map(s => s.trim().toLowerCase());
     if (myKey && assigned.includes(myKey.toLowerCase())) return { allowed: true };
-    return { allowed: false, reason: "Solo puedes cambiar el Estado en las tareas en las que estás asignado/a." };
+    const fieldLabel = key === "Fase" ? "el Timeline" : "el Estado";
+    return { allowed: false, reason: `Solo puedes cambiar ${fieldLabel} en las tareas en las que estás asignado/a.` };
   }
 
   return { allowed: false, reason: "No tienes permiso para editar este campo porque no creaste la tarea." };
@@ -531,6 +555,31 @@ function isBacklogView() {
 
 function isCalendarView() {
   return activeDashboardView === "calendar";
+}
+
+function isKpisView() {
+  return activeDashboardView === "kpis";
+}
+
+function isTimelineView() {
+  return activeDashboardView === "timeline";
+}
+
+function getFaseIndex(val) {
+  const idx = FASE_STAGES.findIndex(stage => stage.value === String(val || "").trim());
+  return idx === -1 ? 0 : idx;
+}
+
+function canEditFase(row, targetValue) {
+  if (!currentUser) return false;
+  if (isAdmin()) return true;
+  // La fase final "Aprobado / Finalizado" queda reservada para administradores/dirección.
+  if (targetValue === "Aprobado / Finalizado") return false;
+  if (row["CreatedBy"] === currentUser.email) return true;
+  const myKey = getMySpecialistKey();
+  if (!myKey) return false;
+  const assigned = (row["Specialists"] || "").split(",").map(s => s.trim().toLowerCase());
+  return assigned.includes(myKey.toLowerCase());
 }
 
 function getVisibleColumns() {
@@ -1437,6 +1486,18 @@ function applyCurrentFiltersAndRender() {
     return;
   }
 
+  if (isKpisView()) {
+    renderKPIs();
+    updateToolbarButtons();
+    return;
+  }
+
+  if (isTimelineView()) {
+    renderTimeline();
+    updateToolbarButtons();
+    return;
+  }
+
   let nextData;
 
   if (!hasRefinement) {
@@ -1946,6 +2007,155 @@ function populateCalendarSpecialistFilter() {
   select.value = calendarSpecialistFilter;
 }
 
+// ─── KPIs view ────────────────────────────────────────────────────────────
+function computeSpecialistKPIs() {
+  const stats = {};
+  OPTIONS.specialists.forEach(name => {
+    stats[name] = { total: 0, done: 0, calidadTotal: 0, calidadAprobada: 0 };
+  });
+
+  allData.forEach(row => {
+    const names = splitMulti(row["Specialists"]);
+    names.forEach(name => {
+      if (!stats[name]) stats[name] = { total: 0, done: 0, calidadTotal: 0, calidadAprobada: 0 };
+      stats[name].total += 1;
+
+      const estado = String(row["Estado"] || "").toLowerCase();
+      if (estado === "done" || estado === "delayed done") stats[name].done += 1;
+
+      const calidad = String(row["Calidad"] || "").trim();
+      if (calidad) {
+        stats[name].calidadTotal += 1;
+        if (calidad.toLowerCase().includes("aprobado")) stats[name].calidadAprobada += 1;
+      }
+    });
+  });
+
+  return stats;
+}
+
+function renderKPIs() {
+  const container = document.getElementById("kpis-grid");
+  if (!container) return;
+
+  const stats = computeSpecialistKPIs();
+  const entries = Object.entries(stats)
+    .filter(([, s]) => s.total > 0)
+    .sort((a, b) => b[1].total - a[1].total);
+
+  if (!entries.length) {
+    container.innerHTML = `<div class="kpi-empty">Aún no hay tareas asignadas para calcular KPIs. Asigna especialistas en All Tasks para verlos aquí.</div>`;
+    return;
+  }
+
+  container.innerHTML = entries.map(([name, s], idx) => {
+    const donePct = s.total ? Math.round((s.done / s.total) * 100) : 0;
+    const calidadPct = s.calidadTotal ? Math.round((s.calidadAprobada / s.calidadTotal) * 100) : 0;
+    const initials = getInitials(name);
+    const colorClass = `avatar-${idx % 7}`;
+
+    return `
+      <div class="kpi-card">
+        <div class="kpi-card__header">
+          <span class="avatar-initials ${colorClass}">${esc(initials)}</span>
+          <div>
+            <div class="kpi-card__name">${esc(name)}</div>
+            <div class="kpi-card__sub">${s.total} tarea${s.total === 1 ? "" : "s"} asignada${s.total === 1 ? "" : "s"}</div>
+          </div>
+        </div>
+
+        <div class="kpi-metric">
+          <div class="kpi-metric__label">
+            <span>Tareas completadas (meta: ${s.total})</span>
+            <span class="kpi-metric__value">${s.done} / ${s.total}</span>
+          </div>
+          <div class="kpi-progress-track">
+            <div class="kpi-progress-fill kpi-progress-fill--done" style="width:${donePct}%"></div>
+          </div>
+        </div>
+
+        <div class="kpi-metric">
+          <div class="kpi-metric__label">
+            <span>Calidad aprobada</span>
+            <span class="kpi-metric__value">${calidadPct}%</span>
+          </div>
+          <div class="kpi-progress-track">
+            <div class="kpi-progress-fill kpi-progress-fill--calidad" style="width:${calidadPct}%"></div>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+// ─── Timeline / Quality review pipeline view ───────────────────────────────
+function renderTimeline() {
+  const container = document.getElementById("timeline-board");
+  if (!container) return;
+
+  const rows = allData.filter(row => !isSubitem(row) && String(row["TASKS"] || "").trim());
+
+  if (!rows.length) {
+    container.innerHTML = `<div class="kpi-empty">No hay proyectos para mostrar en el Timeline todavía.</div>`;
+    return;
+  }
+
+  container.innerHTML = rows.map(row => {
+    const currentIdx = getFaseIndex(row["Fase"]);
+    const names = splitMulti(row["Specialists"]);
+
+    const steps = FASE_STAGES.map((stage, i) => {
+      let state = "pending";
+      if (i < currentIdx) state = "done";
+      if (i === currentIdx) state = "active";
+
+      const clickAttrs = canEditFase(row, stage.value)
+        ? `data-set-fase="${esc(row.__clientKey)}" data-fase-value="${esc(stage.value)}" role="button" tabindex="0"`
+        : "";
+
+      const connector = i < FASE_STAGES.length - 1
+        ? `<span class="timeline-connector ${i < currentIdx ? "timeline-connector--done" : ""}"></span>`
+        : "";
+
+      return `
+        <div class="timeline-step timeline-step--${state}" ${clickAttrs} title="${esc(stage.value)}">
+          <span class="timeline-step__dot">${state === "done" ? "✓" : i + 1}</span>
+          <span class="timeline-step__label">${esc(stage.short)}</span>
+        </div>
+        ${connector}
+      `;
+    }).join("");
+
+    return `
+      <div class="timeline-row">
+        <div class="timeline-row__head">
+          <div class="timeline-row__title">${esc(row["TASKS"] || "Untitled")}</div>
+          <div class="specialists-col">${names.map((n, i) => renderAvatarChip(n, i)).join("")}</div>
+        </div>
+        <div class="timeline-pipeline">${steps}</div>
+      </div>
+    `;
+  }).join("");
+}
+
+function initTimelineInteractions() {
+  const container = document.getElementById("timeline-board");
+  if (!container) return;
+
+  container.addEventListener("click", async e => {
+    const stepEl = e.target.closest("[data-set-fase]");
+    if (!stepEl) return;
+
+    const row = getRowByClientKey(stepEl.dataset.setFase);
+    if (!row) return;
+
+    const newValue = stepEl.dataset.faseValue;
+    if ((row["Fase"] || FASE_STAGES[0].value) === newValue) return;
+
+    await patchCell(row, "Fase", newValue);
+  });
+}
+
 function renderCalendar() {
   const board = document.getElementById("calendar-board");
   const title = document.getElementById("calendar-title");
@@ -2362,6 +2572,24 @@ function setActiveTab(tabName) {
     if (calendarView) calendarView.classList.add("view--active");
     updateSelectionToolbar();
     renderCalendar();
+    return;
+  }
+
+  if (targetTab === "kpis") {
+    activeDashboardView = "kpis";
+    const kpisView = document.getElementById("view-kpis");
+    if (kpisView) kpisView.classList.add("view--active");
+    updateSelectionToolbar();
+    renderKPIs();
+    return;
+  }
+
+  if (targetTab === "timeline") {
+    activeDashboardView = "timeline";
+    const timelineView = document.getElementById("view-timeline");
+    if (timelineView) timelineView.classList.add("view--active");
+    updateSelectionToolbar();
+    renderTimeline();
     return;
   }
 
@@ -3184,7 +3412,7 @@ const PRODUCT_TOUR_STEPS = [
   },
   {
     title: "Vistas principales",
-    body: "Aquí cambias entre All Tasks, Backlog, Calendar y Submit a task. Cada vista cumple una función distinta dentro del flujo de trabajo.",
+    body: "Aquí cambias entre All Tasks, Backlog, Calendar, KPIs y Timeline. Cada vista cumple una función distinta dentro del flujo de trabajo.",
     target: ".tabs",
     placement: "bottom"
   },
@@ -3231,8 +3459,8 @@ const PRODUCT_TOUR_STEPS = [
     before: () => setActiveTab("all-tasks")
   },
   {
-    title: "New",
-    body: "Este botón te lleva directo al formulario para crear una nueva tarea. También puedes entrar desde la pestaña Submit a task.",
+    title: "Submit a Task",
+    body: "Este botón te lleva directo al formulario para crear una nueva tarea, con tipo de trabajo, vertical, especialistas, fechas y deadlines.",
     target: "#btn-new",
     placement: "bottom",
     before: () => setActiveTab("all-tasks")
@@ -3258,11 +3486,18 @@ const PRODUCT_TOUR_STEPS = [
     before: () => prepareTourTableView("backlog")
   },
   {
-    title: "Submit a task",
-    body: "Este formulario crea nuevas tareas con tipo de trabajo, vertical, especialistas, descripción, fechas y deadlines desde el inicio.",
-    target: "#submit-form, #view-submit .submit-form-card",
-    placement: "top",
-    before: () => setActiveTab("submit")
+    title: "KPIs",
+    body: "La pestaña KPIs muestra el progreso de cada especialista: tareas completadas frente a las asignadas y el porcentaje de calidad aprobada, calculado en vivo.",
+    target: '[data-tab="kpis"]',
+    placement: "bottom",
+    before: () => setActiveTab("kpis")
+  },
+  {
+    title: "Timeline",
+    body: "La pestaña Timeline muestra el pipeline de revisión de calidad de cada proyecto: Producción → Revisión de Calidad → Correcciones → Revisión Final → Aprobado. Haz clic en una fase para moverla si tienes permiso.",
+    target: '[data-tab="timeline"]',
+    placement: "bottom",
+    before: () => setActiveTab("timeline")
   },
   {
     title: "Repetir el tutorial",
@@ -3642,6 +3877,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   initSubitemInteractions();
   initSelectionInteractions();
   initCalendarView();
+  initTimelineInteractions();
   initSubmitForm();
   initProductTour();
   await fetchData();

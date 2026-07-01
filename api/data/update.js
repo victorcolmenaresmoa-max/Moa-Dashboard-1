@@ -17,6 +17,9 @@ function checkPermission({ session, key, value, taskSpecialists, taskCreator }) 
     if (key === "Calidad" && value === "Revisado y aprobado") {
       return { allowed: false, reason: "Solo los administradores pueden marcar 'Revisado y aprobado'." };
     }
+    if (key === "Fase" && value === "Aprobado / Finalizado") {
+      return { allowed: false, reason: "Solo los administradores pueden marcar la fase 'Aprobado / Finalizado'." };
+    }
     if (DEADLINE_KEYS.includes(key)) {
       return { allowed: false, reason: "Solo los administradores pueden modificar los Deadlines principales." };
     }
@@ -27,12 +30,13 @@ function checkPermission({ session, key, value, taskSpecialists, taskCreator }) 
     // Lógica normal para tareas que NO creó:
     if (specialistKey && key === specialistKey) return { allowed: true };
 
-    if (key === "Estado") {
+    if (key === "Estado" || key === "Fase") {
       const assigned = (taskSpecialists || "").split(",").map(s => s.trim().toLowerCase());
       const myName   = (specialistKey || "").toLowerCase();
       const myEmail  = (email || "").toLowerCase();
       if (assigned.includes(myName) || assigned.includes(myEmail)) return { allowed: true };
-      return { allowed: false, reason: "Solo puedes cambiar el Estado en tareas donde estás asignado/a." };
+      const fieldLabel = key === "Fase" ? "el Timeline" : "el Estado";
+      return { allowed: false, reason: `Solo puedes cambiar ${fieldLabel} en tareas donde estás asignado/a.` };
     }
 
     return { allowed: false, reason: "No puedes editar esta tarea porque no la creaste ni estás asignado." };

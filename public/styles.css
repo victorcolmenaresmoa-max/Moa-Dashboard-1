@@ -3240,18 +3240,13 @@ max-width: 250px !important;
 }
 
 .kpi-role-table td:nth-child(1) {
-  width: 42%;
+  width: 58%;
   font-weight: 650;
 }
 
 .kpi-role-table td:nth-child(2) {
-  width: 25%;
+  width: 42%;
   color: var(--moa-ink);
-}
-
-.kpi-role-table td:nth-child(3) {
-  width: 33%;
-  color: var(--text-secondary);
 }
 
 .kpi-role-table tr:last-child td {
@@ -3271,7 +3266,7 @@ max-width: 250px !important;
   }
 
   .kpi-role-table {
-    min-width: 680px;
+    min-width: 520px;
   }
 }
 
@@ -3362,9 +3357,8 @@ max-width: 250px !important;
   overflow-wrap: anywhere;
 }
 
-.kpi-role-table td:nth-child(1) { width: 40%; }
-.kpi-role-table td:nth-child(2) { width: 25%; }
-.kpi-role-table td:nth-child(3) { width: 35%; }
+.kpi-role-table td:nth-child(1) { width: 58%; }
+.kpi-role-table td:nth-child(2) { width: 42%; }
 
 .kpi-role-table td strong {
   color: var(--moa-ink);
@@ -3392,6 +3386,6 @@ max-width: 250px !important;
   }
 
   .kpi-role-table {
-    min-width: 680px;
+    min-width: 520px;
   }
 }

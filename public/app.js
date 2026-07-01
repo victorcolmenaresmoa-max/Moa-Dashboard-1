@@ -2093,7 +2093,10 @@ function renderTimeline() {
   const container = document.getElementById("timeline-board");
   if (!container) return;
 
-  const rows = allData.filter(row => !isSubitem(row) && String(row["TASKS"] || "").trim());
+  const rows = allData.filter(row => {
+    const tipo = normalizeText(row["Tipo de trabajo"] || "");
+    return !isSubitem(row) && String(row["TASKS"] || "").trim() && tipo === "project";
+  });
 
   if (!rows.length) {
     container.innerHTML = `<div class="kpi-empty">No hay proyectos para mostrar en el Timeline todavía.</div>`;

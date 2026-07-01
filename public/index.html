@@ -24,7 +24,8 @@
         <button class="tab tab--active" data-tab="all-tasks" role="tab" aria-selected="true"><span class="tab__icon">⊞</span> All Tasks</button>
         <button class="tab" data-tab="backlog" role="tab" aria-selected="false"><span class="tab__icon">▦</span> Backlog</button>
         <button class="tab" data-tab="calendar" role="tab" aria-selected="false"><span class="tab__icon">📅</span> Calendar</button>
-        <button class="tab" data-tab="submit" role="tab" aria-selected="false"><span class="tab__icon">📝</span> Submit a task</button>
+        <button class="tab" data-tab="kpis" role="tab" aria-selected="false"><span class="tab__icon">📊</span> KPIs</button>
+        <button class="tab" data-tab="timeline" role="tab" aria-selected="false"><span class="tab__icon">🧭</span> Timeline</button>
       </nav>
 
       <div class="toolbar">
@@ -54,7 +55,7 @@
           Tutorial
         </button>
         <button class="toolbar__btn toolbar__btn--new" id="btn-new">
-          New
+          Submit a Task
           <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 3.5L5 6.5L8 3.5" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>
         </button>
       </div>
@@ -144,6 +145,41 @@
         </section>
       </div>
 
+
+      <div class="view" id="view-kpis">
+        <section class="kpis-shell" aria-label="Specialist KPIs">
+          <div class="kpis-topbar">
+            <div>
+              <p class="calendar-eyebrow">MOA Performance</p>
+              <h2>KPIs por especialista</h2>
+              <p class="calendar-subtitle">Progreso calculado en vivo a partir de las tareas asignadas en All Tasks.</p>
+            </div>
+          </div>
+          <div class="kpi-grid" id="kpis-grid">
+            <div class="kpi-empty">Cargando KPIs…</div>
+          </div>
+        </section>
+      </div>
+
+      <div class="view" id="view-timeline">
+        <section class="timeline-shell" aria-label="Quality review pipeline">
+          <div class="kpis-topbar">
+            <div>
+              <p class="calendar-eyebrow">MOA Quality Flow</p>
+              <h2>Timeline de revisión de calidad</h2>
+              <p class="calendar-subtitle">Producción → Revisión de calidad → Correcciones → Revisión final → Aprobado. Haz clic en una fase para mover el proyecto (según tus permisos).</p>
+            </div>
+          </div>
+          <div class="timeline-legend" aria-hidden="true">
+            <span><span class="timeline-legend__dot timeline-legend__dot--pending"></span> Pendiente</span>
+            <span><span class="timeline-legend__dot timeline-legend__dot--active"></span> Fase actual</span>
+            <span><span class="timeline-legend__dot timeline-legend__dot--done"></span> Completada</span>
+          </div>
+          <div class="timeline-board" id="timeline-board">
+            <div class="kpi-empty">Cargando timeline…</div>
+          </div>
+        </section>
+      </div>
 
       <div class="view" id="view-submit">
         <section class="submit-hero-shell" aria-label="Submit a new MOA task">

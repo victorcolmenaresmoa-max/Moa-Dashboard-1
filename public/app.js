@@ -2086,7 +2086,7 @@ function renderKPIs() {
         <div>
           <p class="calendar-eyebrow">MOA Performance</p>
           <h3>KPIs por rol</h3>
-          <p>Cada especialista puede ubicar su rol y revisar claramente qué se mide, cuál es la meta y con qué instrumento se evalúa.</p>
+          <p>Cada especialista puede ubicar su rol y revisar claramente qué KPI se mide y cuál es la meta recomendada.</p>
         </div>
         <span class="kpi-role-board__pill">${ROLE_KPI_CONFIG.length} roles</span>
       </div>
@@ -2114,7 +2114,6 @@ function renderRoleKpiCard(roleConfig, index) {
             <tr>
               <th>KPI</th>
               <th>Meta</th>
-              <th>Instrumento</th>
             </tr>
           </thead>
           <tbody>
@@ -2122,7 +2121,6 @@ function renderRoleKpiCard(roleConfig, index) {
               <tr>
                 <td>${esc(item.kpi)}</td>
                 <td><strong>${esc(item.meta)}</strong></td>
-                <td>${esc(item.instrumento)}</td>
               </tr>
             `).join("")}
           </tbody>

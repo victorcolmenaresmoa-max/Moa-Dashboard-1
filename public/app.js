@@ -2008,84 +2008,128 @@ function populateCalendarSpecialistFilter() {
 }
 
 // ─── KPIs view ────────────────────────────────────────────────────────────
-function computeSpecialistKPIs() {
-  const stats = {};
-  OPTIONS.specialists.forEach(name => {
-    stats[name] = { total: 0, done: 0, calidadTotal: 0, calidadAprobada: 0 };
-  });
-
-  allData.forEach(row => {
-    const names = splitMulti(row["Specialists"]);
-    names.forEach(name => {
-      if (!stats[name]) stats[name] = { total: 0, done: 0, calidadTotal: 0, calidadAprobada: 0 };
-      stats[name].total += 1;
-
-      const estado = String(row["Estado"] || "").toLowerCase();
-      if (estado === "done" || estado === "delayed done") stats[name].done += 1;
-
-      const calidad = String(row["Calidad"] || "").trim();
-      if (calidad) {
-        stats[name].calidadTotal += 1;
-        if (calidad.toLowerCase().includes("aprobado")) stats[name].calidadAprobada += 1;
-      }
-    });
-  });
-
-  return stats;
-}
+const ROLE_KPI_CONFIG = [
+  {
+    role: "Evaluation Specialist",
+    note: "KPIs enfocados en entregas de evaluación, calidad técnica y retrabajo.",
+    items: [
+      { kpi: "Entregas a tiempo (perpetual y on-demand)", meta: "≥ 95% dentro del SLA acordado", instrumento: "Dashboard" },
+      { kpi: "Volumen de entregables producidos", meta: "100% del volumen planificado", instrumento: "Dashboard" },
+      { kpi: "Calidad técnica de su trabajo", meta: ">95%", instrumento: "Rúbrica de calidad / Encuesta a profesores de colegios" },
+      { kpi: "Satisfacción interna", meta: "≥ 4.5 / 5 en evaluación interna", instrumento: "Encuesta a otros especialistas y DA" },
+      { kpi: "Retrabajo", meta: "< 2 rondas", instrumento: "Dashboard" }
+    ]
+  },
+  {
+    role: "School Syllabus Specialist",
+    note: "KPIs para producción, calidad y seguimiento de syllabus escolares.",
+    items: [
+      { kpi: "Entregas a tiempo", meta: "≥ 95% dentro del SLA acordado", instrumento: "Calendario / Dashboard" },
+      { kpi: "Volumen de entregables producidos", meta: "100% del volumen planificado", instrumento: "Dashboard" },
+      { kpi: "Calidad técnica de su trabajo", meta: "≥ 90 de 100 pts de calidad", instrumento: "Rúbrica de calidad" },
+      { kpi: "Satisfacción interna", meta: "≥ 4.5 / 5 en evaluación interna", instrumento: "Encuesta a otros especialistas y DA" },
+      { kpi: "Retrabajo", meta: "< 2 rondas", instrumento: "Dashboard" }
+    ]
+  },
+  {
+    role: "Quality Specialist",
+    note: "KPIs para control de entregables revisados y calidad aprobada.",
+    items: [
+      { kpi: "Entregas a tiempo", meta: "≥ 95% dentro del SLA acordado", instrumento: "Dashboard" },
+      { kpi: "Volumen de entregables revisados", meta: "> 100% volumen planificado", instrumento: "Dashboard" },
+      { kpi: "Calidad técnica de su trabajo", meta: "> 95% de calidad técnica", instrumento: "Rúbrica de calidad" },
+      { kpi: "Satisfacción interna", meta: "> 95%", instrumento: "Encuesta a otros especialistas y DA" },
+      { kpi: "Retrabajo", meta: "< 2 rondas", instrumento: "Dashboard" }
+    ]
+  },
+  {
+    role: "Pedagogy Specialist",
+    note: "KPIs para calidad pedagógica, cumplimiento y First-Time-Right.",
+    items: [
+      { kpi: "Entregas a tiempo", meta: "≥ 90% dentro del SLA", instrumento: "Dashboard" },
+      { kpi: "Volumen de entregables producidos", meta: "100% del volumen planificado", instrumento: "Dashboard" },
+      { kpi: "Calidad técnica de su trabajo", meta: "≥ 80% First-Time-Right", instrumento: "Rúbrica de calidad" },
+      { kpi: "Satisfacción interna", meta: "≥ 4.5 / 5", instrumento: "Encuesta a otros especialistas y DA" },
+      { kpi: "Retrabajo", meta: "≤ 20%", instrumento: "Dashboard" }
+    ]
+  },
+  {
+    role: "Materials Specialist",
+    note: "KPIs para curaduría, catálogo, adopción de materiales y mejoras con IA.",
+    items: [
+      { kpi: "Entregas a tiempo", meta: ">95%", instrumento: "Dashboard" },
+      { kpi: "Volumen de materiales curados y catalogados para la MOA Materials Library V1.0", meta: "100% de volumen planificado", instrumento: "Dashboard" },
+      { kpi: "Calidad técnica del material", meta: ">95%", instrumento: "Rúbrica de calidad" },
+      { kpi: "Satisfacción interna / adopción del material", meta: ">95%", instrumento: "Encuesta a otros especialistas, DA y profesores" },
+      { kpi: "Adopción de mejoras con inteligencia artificial en todos los procesos de trabajo", meta: "80% de mejoras planificadas", instrumento: "Dashboard" }
+    ]
+  },
+  {
+    role: "Academy Specialist",
+    note: "KPIs para supervisiones, acompañamientos, desempeño docente e incidencias.",
+    items: [
+      { kpi: "Cumplimiento del calendario de supervisiones y acompañamientos por vertical: Academy, Afterschool y E-MOA", meta: "> 90% ejecutado", instrumento: "Calendario: supervisiones, acompañamientos, reuniones con coordinadores, workshops mensuales" },
+      { kpi: "Índice de Salud y Desempeño de Profesores por vertical (Quality Score)", meta: ">64 pts en promedio por profesor de cada vertical", instrumento: "Formato de supervisión" },
+      { kpi: "Satisfacción interna de workshops, reuniones, feedback", meta: "Asistencia ≥85% · Satisfacción ≥90%", instrumento: "Encuesta a profesores y coordinadores, una vez al trimestre por vertical" },
+      { kpi: "Porcentaje de incidencias de aula resueltas, documentadas y cerradas", meta: "≥ 95% en un plazo ≤ 48 horas", instrumento: "Dashboard / Registro de incidencias" }
+    ]
+  }
+];
 
 function renderKPIs() {
   const container = document.getElementById("kpis-grid");
   if (!container) return;
 
-  const stats = computeSpecialistKPIs();
-  const entries = Object.entries(stats)
-    .filter(([, s]) => s.total > 0)
-    .sort((a, b) => b[1].total - a[1].total);
-
-  if (!entries.length) {
-    container.innerHTML = `<div class="kpi-empty">Aún no hay tareas asignadas para calcular KPIs. Asigna especialistas en All Tasks para verlos aquí.</div>`;
-    return;
-  }
-
-  container.innerHTML = entries.map(([name, s], idx) => {
-    const donePct = s.total ? Math.round((s.done / s.total) * 100) : 0;
-    const calidadPct = s.calidadTotal ? Math.round((s.calidadAprobada / s.calidadTotal) * 100) : 0;
-    const initials = getInitials(name);
-    const colorClass = `avatar-${idx % 7}`;
-
-    return `
-      <div class="kpi-card">
-        <div class="kpi-card__header">
-          <span class="avatar-initials ${colorClass}">${esc(initials)}</span>
-          <div>
-            <div class="kpi-card__name">${esc(name)}</div>
-            <div class="kpi-card__sub">${s.total} tarea${s.total === 1 ? "" : "s"} asignada${s.total === 1 ? "" : "s"}</div>
-          </div>
+  container.innerHTML = `
+    <div class="kpi-role-board">
+      <div class="kpi-role-board__intro">
+        <div>
+          <p class="calendar-eyebrow">MOA Performance</p>
+          <h3>KPIs por rol</h3>
+          <p>Cada especialista puede ubicar su rol y revisar claramente qué se mide, cuál es la meta y con qué instrumento se evalúa.</p>
         </div>
+        <span class="kpi-role-board__pill">${ROLE_KPI_CONFIG.length} roles</span>
+      </div>
+      <div class="kpi-role-grid">
+        ${ROLE_KPI_CONFIG.map((roleConfig, index) => renderRoleKpiCard(roleConfig, index)).join("")}
+      </div>
+    </div>
+  `;
+}
 
-        <div class="kpi-metric">
-          <div class="kpi-metric__label">
-            <span>Tareas completadas (meta: ${s.total})</span>
-            <span class="kpi-metric__value">${s.done} / ${s.total}</span>
-          </div>
-          <div class="kpi-progress-track">
-            <div class="kpi-progress-fill kpi-progress-fill--done" style="width:${donePct}%"></div>
-          </div>
-        </div>
-
-        <div class="kpi-metric">
-          <div class="kpi-metric__label">
-            <span>Calidad aprobada</span>
-            <span class="kpi-metric__value">${calidadPct}%</span>
-          </div>
-          <div class="kpi-progress-track">
-            <div class="kpi-progress-fill kpi-progress-fill--calidad" style="width:${calidadPct}%"></div>
-          </div>
+function renderRoleKpiCard(roleConfig, index) {
+  const colorClass = `avatar-${index % 7}`;
+  return `
+    <article class="kpi-role-card">
+      <div class="kpi-role-card__header">
+        <span class="avatar-initials ${colorClass}">${esc(getInitials(roleConfig.role))}</span>
+        <div>
+          <h4>${esc(roleConfig.role)}</h4>
+          <p>${esc(roleConfig.note)}</p>
         </div>
       </div>
-    `;
-  }).join("");
+      <div class="kpi-role-table-wrap">
+        <table class="kpi-role-table">
+          <thead>
+            <tr>
+              <th>KPI</th>
+              <th>Meta</th>
+              <th>Instrumento</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${roleConfig.items.map(item => `
+              <tr>
+                <td>${esc(item.kpi)}</td>
+                <td><strong>${esc(item.meta)}</strong></td>
+                <td>${esc(item.instrumento)}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      </div>
+    </article>
+  `;
 }
 
 // ─── Timeline / Quality review pipeline view ───────────────────────────────

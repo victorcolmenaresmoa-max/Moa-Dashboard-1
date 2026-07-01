@@ -2084,12 +2084,7 @@ function renderKPIs() {
 
   container.innerHTML = `
     <section class="kpi-clean-board" aria-label="KPIs por especialista">
-      <div class="kpi-clean-board__summary">
-        <div>
-          <span class="kpi-clean-board__eyebrow">KPI + Meta</span>
-          <strong>Vista limpia por rol</strong>
-          <p>Sin instrumentos, sin tablas pesadas y con la información esencial más fácil de leer.</p>
-        </div>
+      <div class="kpi-clean-board__summary kpi-clean-board__summary--stats-only">
         <div class="kpi-clean-board__stats" aria-label="Resumen de KPIs">
           <span><b>${ROLE_KPI_CONFIG.length}</b> roles</span>
           <span><b>${totalKpis}</b> KPIs</span>

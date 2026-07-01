@@ -3812,37 +3812,3 @@ max-width: 250px !important;
   }
 }
 
-
-/* =========================================================
-   KPI final cleanup — removes the duplicated top texts
-   requested in the red boxes.
-========================================================= */
-#view-kpis .kpis-topbar {
-  display: none !important;
-}
-
-#view-kpis .kpis-shell {
-  padding-top: 10px !important;
-}
-
-.kpi-clean-board__summary--stats-only {
-  justify-content: flex-end !important;
-  min-height: 0 !important;
-  padding: 0 2px 2px !important;
-  border: 0 !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  backdrop-filter: none !important;
-}
-
-.kpi-clean-board__summary--stats-only .kpi-clean-board__stats {
-  margin-left: auto !important;
-}
-
-@media (max-width: 768px) {
-  .kpi-clean-board__summary--stats-only {
-    justify-content: flex-start !important;
-    padding: 0 0 2px !important;
-  }
-}

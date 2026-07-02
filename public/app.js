@@ -1,7 +1,7 @@
 // ==============================================
 //  SPECIALISTS DASHBOARD — app.js
 //  Production build: Google OAuth + RBAC
-//  All SheetDB calls go through /api/data/* (server-side proxy)
+//  All Google Sheets writes go through /api/data/* (server-side proxy)
 //  Authentication state is loaded from /api/auth/me on boot
 // ==============================================
 
@@ -697,7 +697,7 @@ async function deleteSelectedRows() {
     allData = previousData;
     selectedRowKeys.clear();
     applyCurrentFiltersAndRender();
-    showToast("No se pudo borrar. Revisa SheetDB, permisos y la columna ID.", "error");
+    showToast("No se pudo borrar. Revisa Google Sheets, Apps Script, permisos y la columna ID.", "error");
   }
 }
 
@@ -2472,7 +2472,7 @@ function parseFlexibleDate(value) {
   let clean = String(value || "").replace(/\u00A0/g, " ").trim();
   if (!clean) return null;
 
-  // Remove extra commas/spaces and common time fragments from Google Sheets / SheetDB.
+  // Remove extra commas/spaces and common time fragments from Google Sheets.
   clean = clean
     .replace(/\s+/g, " ")
     .replace(/\s+at\s+/i, " ")
@@ -2521,7 +2521,7 @@ function parseFlexibleDate(value) {
     return y;
   }
 
-  // Google Sheets serial date, in case SheetDB returns the raw number.
+  // Google Sheets serial date, in case Google returns the raw number.
   if (/^\d+(\.\d+)?$/.test(clean)) {
     const serial = Number(clean);
     if (serial > 20000 && serial < 70000) {
@@ -2842,7 +2842,7 @@ function initSubmitForm() {
       setActiveTab("all-tasks");
     } else {
       if (feedback) {
-        feedback.textContent = "No se pudo guardar. Revisa SheetDB, el URL y que los encabezados de la hoja coincidan.";
+        feedback.textContent = "No se pudo guardar. Revisa Apps Script, el URL y que los encabezados de la hoja coincidan.";
         feedback.className = "form-feedback form-feedback--error";
       }
     }

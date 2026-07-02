@@ -1,19 +1,18 @@
-// api/data/update.js
+// api/data/update.js — PATCH one cell through the MOA Google Sheets Apps Script proxy
 const { verifySession } = require("../../lib/session");
+const { callAppsScript, sendAppsScriptError } = require("./_appsScriptClient");
 
 const DEADLINE_KEYS = ["Deadline 1", "Deadline 2", "Deadline 3", "Deadline 4"];
 
-// Agregamos taskCreator a los parámetros
 function checkPermission({ session, key, value, taskSpecialists, taskCreator }) {
   const { role, specialistKey, email } = session;
 
   if (role === "admin") return { allowed: true };
 
   if (role === "specialist") {
-    // Verificamos si el usuario actual fue quien creó la tarea
     const isCreator = taskCreator === email;
 
-    // Bloqueos universales para especialistas (incluso si la crearon)
+    // Universal blocks for specialists, even on tasks they created.
     if (key === "Calidad" && value === "Revisado y aprobado") {
       return { allowed: false, reason: "Solo los administradores pueden marcar 'Revisado y aprobado'." };
     }
@@ -24,17 +23,19 @@ function checkPermission({ session, key, value, taskSpecialists, taskCreator }) 
       return { allowed: false, reason: "Solo los administradores pueden modificar los Deadlines principales." };
     }
 
-    // 👇 NUEVO: Si es el creador, tiene permiso para editar el resto de la tarea
+    // The creator may edit the rest of the task.
     if (isCreator) return { allowed: true };
 
-    // Lógica normal para tareas que NO creó:
+    // Normal specialist permissions for tasks they did not create.
     if (specialistKey && key === specialistKey) return { allowed: true };
 
     if (key === "Estado" || key === "Fase") {
       const assigned = (taskSpecialists || "").split(",").map(s => s.trim().toLowerCase());
-      const myName   = (specialistKey || "").toLowerCase();
-      const myEmail  = (email || "").toLowerCase();
+      const myName = (specialistKey || "").toLowerCase();
+      const myEmail = (email || "").toLowerCase();
+
       if (assigned.includes(myName) || assigned.includes(myEmail)) return { allowed: true };
+
       const fieldLabel = key === "Fase" ? "el Timeline" : "el Estado";
       return { allowed: false, reason: `Solo puedes cambiar ${fieldLabel} en tareas donde estás asignado/a.` };
     }
@@ -51,32 +52,36 @@ module.exports = async function handler(req, res) {
   const session = verifySession(req);
   if (!session) return res.status(401).json({ error: "Unauthorized" });
 
-  // 👇 Extraemos taskCreator del request
-  const { matchColumn, matchValue, key, value, taskSpecialists, taskCreator } = req.body || {};
+  const { matchColumn, matchValue, key, value } = req.body || {};
   if (!matchColumn || !matchValue || !key || value === undefined) {
     return res.status(400).json({ error: "Missing required fields" });
   }
 
-  // Pasamos taskCreator a la función de permisos
-  const permission = checkPermission({ session, key, value, taskSpecialists: taskSpecialists || "", taskCreator });
-  if (!permission.allowed) {
-    return res.status(403).json({ error: permission.reason });
-  }
-// ... el resto sigue igual ...
   try {
-    const url = `${process.env.SHEETDB_URL}/${encodeURIComponent(matchColumn)}/${encodeURIComponent(matchValue)}`;
-    const sheetRes = await fetch(url, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ data: { [key]: value } })
-    });
-    if (!sheetRes.ok) {
-      const text = await sheetRes.text();
-      return res.status(502).json({ error: "SheetDB error", detail: text });
+    // Never trust taskCreator/taskSpecialists from the browser. Read the current row from the sheet.
+    const existing = await callAppsScript("getByMatch", { matchColumn, matchValue });
+    const row = existing.row;
+
+    if (!row) {
+      return res.status(404).json({ error: "Tarea no encontrada." });
     }
-    return res.status(200).json(await sheetRes.json());
+
+    const permission = checkPermission({
+      session,
+      key,
+      value,
+      taskSpecialists: row["Specialists"] || "",
+      taskCreator: row["CreatedBy"] || ""
+    });
+
+    if (!permission.allowed) {
+      return res.status(403).json({ error: permission.reason });
+    }
+
+    const result = await callAppsScript("update", { matchColumn, matchValue, key, value });
+    return res.status(200).json(result);
   } catch (err) {
     console.error("Update error:", err);
-    return res.status(500).json({ error: "Internal server error" });
+    return sendAppsScriptError(res, err, "Internal server error");
   }
 };

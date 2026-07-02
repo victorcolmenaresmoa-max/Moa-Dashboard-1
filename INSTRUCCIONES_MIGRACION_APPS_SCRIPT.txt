@@ -1,0 +1,70 @@
+MOA Dashboard — Migración de SheetDB a Google Sheets con Apps Script
+
+ARCHIVOS QUE DEBES REEMPLAZAR / AGREGAR
+
+1. Reemplaza estos archivos en tu proyecto:
+   - api/data/index.js
+   - api/data/create.js
+   - api/data/update.js
+   - api/data/delete.js
+   - public/app.js
+   - .env.example
+
+2. Agrega este archivo nuevo:
+   - api/data/_appsScriptClient.js
+
+3. El archivo de Apps Script NO va dentro de Vercel/GitHub como parte de la app.
+   Debes copiar su contenido y pegarlo dentro del Google Sheet:
+   - apps-script/MoaDashboardApi.gs
+
+PASOS EN GOOGLE SHEETS
+
+1. Abre tu Google Sheet del dashboard.
+2. Ve a Extensions / Extensiones > Apps Script.
+3. Borra el código que aparezca y pega todo el contenido de:
+   apps-script/MoaDashboardApi.gs
+4. En el código, busca esta función:
+   setupMoaDashboardToken()
+5. Cambia PASTE_THE_SAME_LONG_RANDOM_TOKEN_HERE por un token largo y secreto.
+   Ese mismo token lo vas a usar en Vercel como GOOGLE_APPS_SCRIPT_TOKEN.
+6. Ejecuta una vez la función setupMoaDashboardToken.
+7. Autoriza los permisos que Google pida.
+8. Ve a Deploy > New deployment.
+9. Tipo: Web app.
+10. Execute as: Me / Yo.
+11. Who has access: Anyone / Cualquiera.
+12. Deploy.
+13. Copia el Web App URL que termina en /exec.
+
+VARIABLES EN VERCEL
+
+En tu proyecto de Vercel, reemplaza SHEETDB_URL por estas dos variables:
+
+GOOGLE_APPS_SCRIPT_URL=https://script.google.com/macros/s/TU_DEPLOYMENT_ID/exec
+GOOGLE_APPS_SCRIPT_TOKEN=el_mismo_token_largo_que_pusiste_en_apps_script
+
+Puedes eliminar SHEETDB_URL cuando confirmes que todo funciona.
+
+IMPORTANTE
+
+- No pegues el token dentro del frontend.
+- No lo pongas en public/app.js.
+- El token solo va en Vercel y en las Script Properties de Apps Script.
+- Si cambias el código de Apps Script después, debes volver a hacer Deploy > Manage deployments > Edit > New version > Deploy.
+- El tab de tu hoja se llama Sheet1. Si algún día le cambias el nombre, actualiza MOA_DASHBOARD_SHEET_NAME desde Script Properties o cambia MOA_DEFAULT_SHEET_NAME en el Apps Script.
+
+PRUEBA RÁPIDA
+
+1. Sube los archivos a GitHub.
+2. Agrega las variables en Vercel.
+3. Redeploy.
+4. Abre el dashboard.
+5. Crea una tarea de prueba.
+6. Edita una celda.
+7. Borra la tarea desde Backlog.
+
+Si algo falla, revisa primero:
+- Que el Apps Script URL sea el de /exec, no /dev.
+- Que GOOGLE_APPS_SCRIPT_TOKEN sea exactamente igual en Vercel y Apps Script.
+- Que hayas hecho redeploy en Vercel después de agregar variables.
+- Que el Web App esté desplegado con acceso Anyone / Cualquiera.

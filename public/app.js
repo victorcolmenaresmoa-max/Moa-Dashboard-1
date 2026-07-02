@@ -1,7 +1,7 @@
 // ==============================================
 //  SPECIALISTS DASHBOARD — app.js
 //  Production build: Google OAuth + RBAC
-//  All Google Sheets writes go through /api/data/* (server-side proxy)
+//  All SheetDB calls go through /api/data/* (server-side proxy)
 //  Authentication state is loaded from /api/auth/me on boot
 // ==============================================
 
@@ -697,7 +697,7 @@ async function deleteSelectedRows() {
     allData = previousData;
     selectedRowKeys.clear();
     applyCurrentFiltersAndRender();
-    showToast("No se pudo borrar. Revisa Google Sheets, Apps Script, permisos y la columna ID.", "error");
+    showToast("No se pudo borrar. Revisa SheetDB, permisos y la columna ID.", "error");
   }
 }
 
@@ -2080,54 +2080,51 @@ function renderKPIs() {
   const container = document.getElementById("kpis-grid");
   if (!container) return;
 
-  const totalKpis = ROLE_KPI_CONFIG.reduce((total, roleConfig) => total + roleConfig.items.length, 0);
-
   container.innerHTML = `
-    <section class="kpi-clean-board" aria-label="KPIs por especialista">
-      <div class="kpi-clean-board__summary">
-        <div class="kpi-clean-board__summary-text">
-          <span>KPI + META</span>
-          <strong>Vista limpia por rol</strong>
+    <div class="kpi-role-board">
+      <div class="kpi-role-board__intro">
+        <div>
+          <p class="calendar-eyebrow">MOA Performance</p>
+          <h3>KPIs por rol</h3>
+          <p>Cada especialista puede ubicar su rol y revisar claramente qué KPI se mide y cuál es la meta recomendada.</p>
         </div>
-        <div class="kpi-clean-board__stats" aria-label="Resumen de KPIs">
-          <span><b>${ROLE_KPI_CONFIG.length}</b> roles</span>
-          <span><b>${totalKpis}</b> KPIs</span>
-        </div>
+        <span class="kpi-role-board__pill">${ROLE_KPI_CONFIG.length} roles</span>
       </div>
-      <div class="kpi-clean-grid">
+      <div class="kpi-role-grid">
         ${ROLE_KPI_CONFIG.map((roleConfig, index) => renderRoleKpiCard(roleConfig, index)).join("")}
       </div>
-    </section>
+    </div>
   `;
 }
 
 function renderRoleKpiCard(roleConfig, index) {
   const colorClass = `avatar-${index % 7}`;
-  const initials = getInitials(roleConfig.role);
-
   return `
-    <article class="kpi-clean-card">
-      <header class="kpi-clean-card__header">
-        <span class="kpi-clean-card__avatar avatar-initials ${colorClass}">${esc(initials)}</span>
-        <div class="kpi-clean-card__title">
+    <article class="kpi-role-card">
+      <div class="kpi-role-card__header">
+        <span class="avatar-initials ${colorClass}">${esc(getInitials(roleConfig.role))}</span>
+        <div>
           <h4>${esc(roleConfig.role)}</h4>
           <p>${esc(roleConfig.note)}</p>
         </div>
-        <span class="kpi-clean-card__badge">${roleConfig.items.length} KPIs</span>
-      </header>
-      <div class="kpi-clean-list">
-        ${roleConfig.items.map((item, itemIndex) => `
-          <div class="kpi-clean-row">
-            <div class="kpi-clean-row__kpi">
-              <span class="kpi-clean-row__number">${String(itemIndex + 1).padStart(2, "0")}</span>
-              <span>${esc(item.kpi)}</span>
-            </div>
-            <div class="kpi-clean-row__target">
-              <small>Meta</small>
-              <strong>${esc(item.meta)}</strong>
-            </div>
-          </div>
-        `).join("")}
+      </div>
+      <div class="kpi-role-table-wrap">
+        <table class="kpi-role-table">
+          <thead>
+            <tr>
+              <th>KPI</th>
+              <th>Meta</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${roleConfig.items.map(item => `
+              <tr>
+                <td>${esc(item.kpi)}</td>
+                <td><strong>${esc(item.meta)}</strong></td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
       </div>
     </article>
   `;
@@ -2472,7 +2469,7 @@ function parseFlexibleDate(value) {
   let clean = String(value || "").replace(/\u00A0/g, " ").trim();
   if (!clean) return null;
 
-  // Remove extra commas/spaces and common time fragments from Google Sheets.
+  // Remove extra commas/spaces and common time fragments from Google Sheets / SheetDB.
   clean = clean
     .replace(/\s+/g, " ")
     .replace(/\s+at\s+/i, " ")
@@ -2521,7 +2518,7 @@ function parseFlexibleDate(value) {
     return y;
   }
 
-  // Google Sheets serial date, in case Google returns the raw number.
+  // Google Sheets serial date, in case SheetDB returns the raw number.
   if (/^\d+(\.\d+)?$/.test(clean)) {
     const serial = Number(clean);
     if (serial > 20000 && serial < 70000) {
@@ -2842,7 +2839,7 @@ function initSubmitForm() {
       setActiveTab("all-tasks");
     } else {
       if (feedback) {
-        feedback.textContent = "No se pudo guardar. Revisa Apps Script, el URL y que los encabezados de la hoja coincidan.";
+        feedback.textContent = "No se pudo guardar. Revisa SheetDB, el URL y que los encabezados de la hoja coincidan.";
         feedback.className = "form-feedback form-feedback--error";
       }
     }
@@ -3535,16 +3532,30 @@ const PRODUCT_TOUR_STEPS = [
   },
   {
     title: "KPIs",
-    body: "La pestaña KPIs muestra el progreso de cada especialista: tareas completadas frente a las asignadas y el porcentaje de calidad aprobada, calculado en vivo.",
+    body: "En la pestaña KPIs cada especialista puede buscar su rol y revisar sus indicadores principales sin entrar a la hoja de cálculo.",
     target: '[data-tab="kpis"]',
     placement: "bottom",
     before: () => setActiveTab("kpis")
   },
   {
+    title: "KPIs por rol",
+    body: "Cada tarjeta muestra únicamente el KPI y la meta recomendada. Usa esta vista para saber qué se espera de cada rol: Evaluation, Syllabus, Quality, Pedagogy, Materials y Academy.",
+    target: "#view-kpis .kpi-role-board, #kpis-grid",
+    placement: "top",
+    before: () => setActiveTab("kpis")
+  },
+  {
     title: "Timeline",
-    body: "La pestaña Timeline muestra el pipeline de revisión de calidad de cada proyecto: Producción → Revisión de Calidad → Correcciones → Revisión Final → Aprobado. Haz clic en una fase para moverla si tienes permiso.",
+    body: "La pestaña Timeline muestra el flujo de revisión de calidad solo para tareas tipo PROJECT. Las tareas PERPETUAL u ON-DEMAND no aparecen aquí.",
     target: '[data-tab="timeline"]',
     placement: "bottom",
+    before: () => setActiveTab("timeline")
+  },
+  {
+    title: "Mover proyectos por fase",
+    body: "Aquí puedes ver en qué etapa está cada proyecto: Producción, Revisión de Calidad, Correcciones, Revisión Final o Aprobado. Haz clic en una fase para mover el proyecto, siempre que tengas permiso.",
+    target: "#view-timeline .timeline-board, #timeline-board",
+    placement: "top",
     before: () => setActiveTab("timeline")
   },
   {
